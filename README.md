@@ -4,29 +4,39 @@ A unified environment where AI agents work together from a single workspace.
 
 ## Vision
 
-Most AI tools solve one problem at a time.
+Most AI tools are built around a single assistant.
 
-Aero Agents is being built around a different idea:
+aero agents is built around a different idea.
 
 Multiple specialized agents.
-One environment.
+
+One workspace.
+
 One workflow.
 
-The goal is to reduce friction between thinking and execution.
+Users can create, customize, and run their own agents for everyday tasks, automation, research, coding, and productivity.
 
-## Current Status
+The goal is simple:
 
-Early development.
+Reduce the gap between thinking and execution.
 
-Building in public.
+## What We're Building
 
-## Roadmap
-
-- Core agent framework
+- Multi-agent workspace
+- User-created agents
+- Agent management system
+- Workflow automation
 - Terminal integration
-- Workflow orchestration
-- Multi-agent communication
 - Knowledge management
 - Local and cloud execution
+- Agent collaboration and orchestration
 
-More updates soon.
+## Why
+
+Useful software should do more than answer questions.
+
+It should help people get work done.
+
+Aero Agents is being built to make AI more practical, customizable, and integrated into real workflows.
+
+⟡ zærn
