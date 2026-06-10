@@ -5,6 +5,7 @@
 export const AGENT_CONSOLE_ROUTE: Record<string, string> = {
   'Project Analyzer': '/dashboard/legitimacy',
   'GitHub Analyzer': '/dashboard/github',
+  'Wallet Analyzer': '/dashboard/wallet',
   'YouTube Agent': '/dashboard/youtube',
   'Docs Agent': '/dashboard/docs',
   'X (Twitter) Agent': '/dashboard/xagent',

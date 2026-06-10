@@ -209,3 +209,49 @@ export function docsAnalyze(url: string, model?: string): Promise<DocsAnalyzeRes
 export function docsGetJob(jobId: string): Promise<DocsJobStatusResponse> {
   return request<DocsJobStatusResponse>(`/api/docs-agent/jobs/${jobId}`);
 }
+
+// ─── Wallet analyzer ──────────────────────────────────────────────────────────
+// POST /api/wallet/analyze  { address, chain, model? }
+// GET  /api/wallet/jobs/{job_id}
+
+// 'auto' lets the backend detect which chain(s) the address is active on.
+export type WalletChain = 'auto' | 'ethereum' | 'base';
+
+export interface WalletAnalyzeRequest {
+  address: string;
+  chain?: WalletChain; // defaults to 'auto' server-side
+  model?: string;
+}
+
+export interface WalletAnalyzeResponse {
+  job_id: string;
+  cached: boolean;
+  report: string | null;        // markdown string (set when cached=true)
+  evidence: Record<string, unknown> | null;
+  conversation_id: string | null;
+}
+
+export interface WalletJobStatusResponse {
+  status: string;               // queued | collecting | verifying | scoring | generating | done | failed
+  phase_progress: number;       // 0-100
+  report: string | null;        // markdown (set when status=done)
+  evidence: Record<string, unknown> | null;
+  error: string | null;
+  error_code: string | null;
+  conversation_id: string | null;
+}
+
+export function walletAnalyze(
+  address: string,
+  chain: WalletChain,
+  model?: string
+): Promise<WalletAnalyzeResponse> {
+  return request<WalletAnalyzeResponse>('/api/wallet/analyze', {
+    method: 'POST',
+    body: JSON.stringify({ address, chain, model }),
+  });
+}
+
+export function walletGetJob(jobId: string): Promise<WalletJobStatusResponse> {
+  return request<WalletJobStatusResponse>(`/api/wallet/jobs/${jobId}`);
+}
