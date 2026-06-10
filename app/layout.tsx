@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Cormorant_Garamond, Inter, JetBrains_Mono, Montserrat, Prata } from "next/font/google";
+import { Inter, JetBrains_Mono, Montserrat, Prata } from "next/font/google";
 import { themeScript } from "@/lib/theme";
 import { MODEL_COUNT } from "@/lib/models";
 import Providers from "./providers";
@@ -7,22 +7,14 @@ import "./globals.css";
 
 const montserrat = Montserrat({
   subsets: ["latin"],
-  weight: ["300", "400", "500", "600", "700", "800"],
+  weight: ["300", "400", "500", "600", "700"],
   style: ["normal", "italic"],
   variable: "--font-montserrat",
   display: "swap",
 });
-// kept only for the æ glyph fallback; titles + logo are Montserrat now.
-const cormorant = Cormorant_Garamond({
-  subsets: ["latin"],
-  weight: ["300", "400", "500", "600"],
-  style: ["normal", "italic"],
-  variable: "--font-cormorant",
-  display: "swap",
-});
 const inter = Inter({
   subsets: ["latin"],
-  weight: ["400", "500", "700", "800", "900"],
+  weight: ["400", "500", "700"],
   variable: "--font-inter",
   display: "swap",
 });
@@ -40,7 +32,7 @@ const prata = Prata({
   display: "swap",
 });
 
-const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? "https://aero.example.com";
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? "https://aeroagents.io";
 const TITLE = "aero - one interface, every AI model";
 const DESCRIPTION = `Chat with ${MODEL_COUNT} frontier models, build agents that act, assemble teams, and track every token. One interface. Every AI model.`;
 
@@ -73,7 +65,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     <html
       lang="en"
       suppressHydrationWarning
-      className={`${cormorant.variable} ${inter.variable} ${jetbrains.variable} ${montserrat.variable} ${prata.variable}`}
+      className={`${inter.variable} ${jetbrains.variable} ${montserrat.variable} ${prata.variable}`}
     >
       <head>
         <script dangerouslySetInnerHTML={{ __html: themeScript }} />

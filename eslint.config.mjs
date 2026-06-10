@@ -1,6 +1,6 @@
 import next from "eslint-config-next";
 
-// eslint-config-next@16 ships a native flat-config array - spread it directly.
+// eslint-config-next@16 ships a native flat-config array — spread it directly.
 const eslintConfig = [
   {
     ignores: [

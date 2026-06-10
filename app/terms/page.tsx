@@ -165,8 +165,8 @@ export default function TermsPage() {
       <Section title="10. Contact">
         <p>
           Questions about these terms? Reach out to us at{" "}
-          <a className="legal-mail" href="mailto:team@aero.app">
-            team@aero.app
+          <a className="legal-mail" href="mailto:team@aeroagents.io">
+            team@aeroagents.io
           </a>
           .
         </p>

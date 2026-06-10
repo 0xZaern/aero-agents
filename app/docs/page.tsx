@@ -324,7 +324,7 @@ export default function DocsPage() {
           <div id="telegram" className="legal-section">
             <h2>Telegram Bot</h2>
             <h3>Finding the Bot</h3>
-            <p>Search for <C>@aero_bot</C> in Telegram, or use the link on the web app&apos;s Settings page to open it directly. Send <C>/start</C> to initialize - the bot will introduce itself and show available options.</p>
+            <p>Search for <C>@aeroagents_bot</C> in Telegram, or use the link on the web app&apos;s Settings page to open it directly. Send <C>/start</C> to initialize - the bot will introduce itself and show available options.</p>
             <h3>Chatting</h3>
             <p>You don&apos;t need any special command to chat. Just type your message and send it. The bot responds using whatever model you&apos;ve currently selected. Responses are streamed when the model supports it, and longer responses are split into multiple messages automatically.</p>
             <h3>Switching Models</h3>
@@ -419,7 +419,7 @@ export default function DocsPage() {
           <div id="your-data" className="legal-section">
             <h2>Your Data</h2>
             <h3>Where it lives</h3>
-            <p>Conversations, agents, teams, settings, and credit history are stored in managed PostgreSQL, encrypted at rest. Uploaded files (images, PDFs, attachments) go into private object storage, scoped to your wallet address. Secrets like API keys and linked-Telegram tokens are per-account and never exposed client-side.</p>
+            <p>Conversations, agents, teams, settings, and credit history are stored in Supabase (Postgres), encrypted at rest. Uploaded files (images, PDFs, attachments) go into Supabase Storage, scoped to your wallet address. Secrets like API keys and linked-Telegram tokens are per-account and never exposed client-side.</p>
             <h3>How long it&apos;s kept</h3>
             <p>There is no auto-purge. Everything stays until you delete it. Delete a conversation and the row plus every message in it is hard-deleted immediately. Delete your account and every conversation, agent, team, file, linked Telegram record, and credit ledger entry is wiped in the same transaction.</p>
             <h3>What can&apos;t be deleted</h3>
@@ -427,13 +427,113 @@ export default function DocsPage() {
             <h3>Training</h3>
             <p>Your messages are not used to train any model. Each request is forwarded to the model&apos;s original provider for inference only, and discarded from our side once the response streams back.</p>
             <h3>Export or deletion request</h3>
-            <p>No self-serve export button yet. Email us at <a href="mailto:team@aero.app">team@aero.app</a> with your wallet address and we&apos;ll send you a full JSON dump of your data - or wipe everything, if you&apos;d rather have it gone.</p>
+            <p>No self-serve export button yet. Email us at <a href="mailto:team@aeroagents.io">team@aeroagents.io</a> with your wallet address and we&apos;ll send you a full JSON dump of your data - or wipe everything, if you&apos;d rather have it gone.</p>
           </div>
 
           {/* API */}
           <div id="api" className="legal-section">
             <h2>API</h2>
-            <p>No public API yet. Everything today runs through the web app and the Telegram bot. If and when programmatic access ships, it&apos;ll be announced and documented on this page - not a moment before.</p>
+            <p>aero has a public developer API. Mint a key, point any HTTP client at it, and call the same models and agents the web app uses from your own app, bot, or backend. You write the frontend, aero does the work behind the key.</p>
+
+            <h3>Get a key</h3>
+            <p>Open <B>Dashboard → Developer API</B> and click <B>create key</B>. The key is shown <B>once</B> at creation (format <C>sk_aero_...</C>) and only its hash is stored, so copy it immediately. You can mint several keys (one per app); they all share one balance. Revoking a key deletes it and stops it working at once.</p>
+
+            <h3>Base URL and auth</h3>
+            <p>All endpoints live under <C>/v1</C> on your aero domain. Send the key as a Bearer token on every request:</p>
+            <pre className="legal-pre">{`Base URL:  https://aeroagents.io/v1
+Header:    Authorization: Bearer sk_aero_...`}</pre>
+
+            <h3>Billing and the API wallet</h3>
+            <p>The API has its <B>own credit wallet</B>, separate from the web-app credits. You top it up with <B>VVV (Venice Token)</B> on Base from the Developer API page, choosing a fixed amount (for example pay 0.8 VVV to add $10 of credits). Credits never expire and drain per call:</p>
+            <ul>
+              <li><B>Per-token</B> for every endpoint that runs a model (<C>/v1/chat</C>, <C>/v1/agent</C>, and all the agent endpoints): you pay the chosen model&apos;s token cost, summed across the whole pipeline.</li>
+              <li><B>Flat fee</B> for pure-analysis calls (<C>/v1/slop</C>): no model, a small fixed price.</li>
+            </ul>
+            <p>When the wallet hits zero, calls return <C>402</C> until you top up. The same key keeps working after a top-up.</p>
+
+            <h3>Endpoints</h3>
+            <table className="legal-table">
+              <tbody>
+                <Th cols={["Method", "Path", "What it does", "Billing"]} />
+                <tr><td>GET</td><td><C>/v1/models</C></td><td>List callable models and their per-token pricing</td><td>free</td></tr>
+                <tr><td>POST</td><td><C>/v1/chat</C></td><td>Chat completion across any model</td><td>per-token</td></tr>
+                <tr><td>POST</td><td><C>/v1/agent</C></td><td>Run a tool-using agent (researcher, coder, writer, analyst, critic, summarizer)</td><td>per-token</td></tr>
+                <tr><td>POST</td><td><C>/v1/youtube</C></td><td>Transcribe and summarize a YouTube video</td><td>per-token</td></tr>
+                <tr><td>POST</td><td><C>/v1/legitimacy</C></td><td>Legitimacy verdict on a crypto/web3 project URL</td><td>per-token</td></tr>
+                <tr><td>POST</td><td><C>/v1/github</C></td><td>Analyze a public GitHub repository</td><td>per-token</td></tr>
+                <tr><td>POST</td><td><C>/v1/docs</C></td><td>Analyze a documentation/product website</td><td>per-token</td></tr>
+                <tr><td>POST</td><td><C>/v1/slop</C></td><td>AI-slop signal scan of text or code</td><td>flat fee</td></tr>
+              </tbody>
+            </table>
+
+            <h3>Example: chat</h3>
+            <pre className="legal-pre">{`curl https://aeroagents.io/v1/chat \\
+  -H "Authorization: Bearer sk_aero_..." \\
+  -H "Content-Type: application/json" \\
+  -d '{"model":"claude-sonnet-4-6","messages":[{"role":"user","content":"Hello"}]}'`}</pre>
+            <p>Response:</p>
+            <pre className="legal-pre">{`{
+  "model": "claude-sonnet-4-6",
+  "content": "Hi! How can I help?",
+  "usage": {
+    "inputTokens": 9,
+    "outputTokens": 7,
+    "creditsSpent": 0.0001,
+    "creditsRemaining": 24.99
+  }
+}`}</pre>
+
+            <h3>Example: agent</h3>
+            <p>Run a tool-using agent. <C>agent</C> is one of <C>researcher</C>, <C>coder</C>, <C>writer</C>, <C>analyst</C>, <C>critic</C>, <C>summarizer</C>. It uses its tools (web search, URL read, code exec) as needed and returns the final answer.</p>
+            <pre className="legal-pre">{`curl https://aeroagents.io/v1/agent \\
+  -H "Authorization: Bearer sk_aero_..." \\
+  -H "Content-Type: application/json" \\
+  -d '{"agent":"researcher","message":"Latest Base chain TVL trend","model":"claude-fable-5"}'`}</pre>
+            <p>Response:</p>
+            <pre className="legal-pre">{`{
+  "model": "claude-fable-5",
+  "agent": "Researcher",
+  "content": "Base TVL has...",
+  "usage": { "inputTokens": 4120, "outputTokens": 880, "creditsSpent": 0.0489, "creditsRemaining": 24.95 }
+}`}</pre>
+
+            <h3>Example: github</h3>
+            <pre className="legal-pre">{`curl https://aeroagents.io/v1/github \\
+  -H "Authorization: Bearer sk_aero_..." \\
+  -H "Content-Type: application/json" \\
+  -d '{"repo_url":"https://github.com/owner/repo","model":"deepseek-v4-flash"}'`}</pre>
+            <p>Response: a structured <C>verdict</C> object (verdict, confidence, code quality, AI-slop signals, security, activity) plus the usual <C>usage</C> block.</p>
+
+            <h3>Example: legitimacy</h3>
+            <pre className="legal-pre">{`curl https://aeroagents.io/v1/legitimacy \\
+  -H "Authorization: Bearer sk_aero_..." \\
+  -H "Content-Type: application/json" \\
+  -d '{"project_url":"https://example.xyz","model":"claude-sonnet-4-6"}'`}</pre>
+            <p>Returns a markdown <C>report</C> (the verdict) plus <C>usage</C>.</p>
+
+            <h3>Example: docs</h3>
+            <pre className="legal-pre">{`curl https://aeroagents.io/v1/docs \\
+  -H "Authorization: Bearer sk_aero_..." \\
+  -H "Content-Type: application/json" \\
+  -d '{"url":"https://docs.example.com","model":"llama-3.3-70b"}'`}</pre>
+            <p>Returns a structured <C>report</C> (verdict, slop score, TL;DR, tech stack, socials) plus <C>usage</C>.</p>
+
+            <h3>Example: slop scan</h3>
+            <pre className="legal-pre">{`curl https://aeroagents.io/v1/slop \\
+  -H "Authorization: Bearer sk_aero_..." \\
+  -H "Content-Type: application/json" \\
+  -d '{"text":"This revolutionary, game-changing tool is fast, simple, and powerful."}'`}</pre>
+
+            <h3>Choosing a model</h3>
+            <p>Every endpoint that uses an LLM takes an optional <C>model</C> field. Pass any id from <C>/v1/models</C> to pick it; omit the field and the default model is used. A model id that does not exist returns <C>400</C>. Pure-analysis endpoints like <C>/v1/slop</C> take no model.</p>
+
+            <h3>Errors</h3>
+            <ul>
+              <li><C>401</C> missing, malformed, or revoked key.</li>
+              <li><C>402</C> API wallet out of credits, top up with VVV to continue.</li>
+              <li><C>400</C> bad request (unknown model, missing fields).</li>
+              <li><C>422</C> the input could not be processed (for example a bad video URL).</li>
+            </ul>
           </div>
 
           {/* Rate Limits */}
@@ -446,7 +546,7 @@ export default function DocsPage() {
           {/* Troubleshooting */}
           <div id="troubleshooting" className="legal-section">
             <h2>Troubleshooting</h2>
-            <p>Common things that go sideways and how to recover. If none of this helps, email us at <a href="mailto:team@aero.app">team@aero.app</a> and we&apos;ll take a look.</p>
+            <p>Common things that go sideways and how to recover. If none of this helps, email us at <a href="mailto:team@aeroagents.io">team@aeroagents.io</a> and we&apos;ll take a look.</p>
             <h3>Wallet won&apos;t connect</h3>
             <ul>
               <li>aero only supports <B>MetaMask</B> today. Make sure the MetaMask extension is installed and unlocked before clicking Connect.</li>
@@ -485,7 +585,7 @@ export default function DocsPage() {
             <div className="legal-foot-links">
               <Link href="/terms">Terms</Link>
               <Link href="/privacy">Privacy</Link>
-              <a href="mailto:team@aero.app">team@aero.app</a>
+              <a href="mailto:team@aeroagents.io">team@aeroagents.io</a>
             </div>
           </div>
         </main>

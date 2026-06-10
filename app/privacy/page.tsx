@@ -89,7 +89,7 @@ export default function PrivacyPage() {
         <Bullets
           items={[
             "AI model providers (Anthropic, OpenAI, Google, DeepSeek, Meta, xAI, Moonshot, Alibaba, MiniMax, Z.ai, Mistral) - your messages are sent to these providers to generate responses. Each provider's privacy policy applies to their model inference.",
-            "Managed cloud infrastructure - a managed PostgreSQL database and object storage provider. Conversation history, agent configs, and account data are stored in hosted PostgreSQL, and uploaded files are kept in private object storage.",
+            "Supabase - database, storage, and backend infrastructure. Conversation history, agent configs, and account data are stored in Supabase-hosted PostgreSQL, and uploaded files are kept in Supabase Storage.",
             "Telegram - if you link a Telegram account, your Telegram ID and username are stored and used to authenticate you via the bot.",
             "Base / Ethereum network - payments are processed on the Base blockchain. Payment transactions are publicly visible on-chain by nature.",
           ]}
@@ -103,7 +103,7 @@ export default function PrivacyPage() {
       <Section title="6. Data Storage & Security">
         <Bullets
           items={[
-            "All account and conversation data is stored in managed PostgreSQL, encrypted at rest.",
+            "All account and conversation data is stored in Supabase (PostgreSQL), encrypted at rest.",
             "Uploaded files are kept in a private storage bucket and served only through signed links, never public URLs.",
             "Authentication uses wallet signatures - your private key is never transmitted to us.",
             "We use HTTPS for all data in transit.",
@@ -174,8 +174,8 @@ export default function PrivacyPage() {
       <Section title="12. Contact">
         <p>
           Questions, data requests, or deletion requests:{" "}
-          <a className="legal-mail" href="mailto:team@aero.app">
-            team@aero.app
+          <a className="legal-mail" href="mailto:team@aeroagents.io">
+            team@aeroagents.io
           </a>
           .
         </p>

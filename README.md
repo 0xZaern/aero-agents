@@ -31,6 +31,10 @@ Reduce the gap between thinking and execution.
 - Local and cloud execution
 - Agent collaboration and orchestration
 
+## Models
+
+Chat across the full frontier lineup from one interface. Latest addition: **Claude Fable 5** (Anthropic).
+
 ## Why
 
 Useful software should do more than answer questions.
