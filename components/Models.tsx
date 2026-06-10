@@ -20,13 +20,18 @@ export default function Models() {
   useGSAP(
     () => {
       if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
-      ScrollTrigger.create({
-        trigger: section.current!,
-        start: "top top",
-        end: "+=60%",
-        pin: true,
-        pinSpacing: true,
-        anticipatePin: 1,
+      // Desktop-only: the scroll-lock pin fights the mobile URL bar. On phones
+      // the section just scrolls normally.
+      const mm = gsap.matchMedia();
+      mm.add("(min-width: 768px)", () => {
+        ScrollTrigger.create({
+          trigger: section.current!,
+          start: "top top",
+          end: "+=60%",
+          pin: true,
+          pinSpacing: true,
+          anticipatePin: 1,
+        });
       });
     },
     { scope: section }
@@ -36,6 +41,10 @@ export default function Models() {
     <section className="section models" id="models" ref={section}>
       <div className="container models-grid">
         <Reveal className="models-copy">
+          <span className="models-kicker">
+            <span className="models-kicker-tag">New</span>
+            <span>Claude <strong>Fable&nbsp;5</strong> added</span>
+          </span>
           <RevealText as="h2" className="section-title" splitBy="word">
             Every frontier model, one login.
           </RevealText>

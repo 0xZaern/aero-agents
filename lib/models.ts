@@ -4,7 +4,7 @@
  * the provider tally, and the wheel all update automatically. No manual edits
  * elsewhere.
  *
- * Later this can be swapped for a fetch from the backend (e.g. an
+ * Later this can be swapped for a fetch from the aero backend (e.g. an
  * /api/models endpoint) without touching the components: just make getModels()
  * async and return the same shape.
  */
@@ -12,9 +12,11 @@
 export interface ModelEntry {
   name: string;
   provider: string;
+  isNew?: boolean;
 }
 
 export const MODELS: ModelEntry[] = [
+  { name: "Claude Fable 5", provider: "Anthropic", isNew: true },
   { name: "Claude Opus 4.8", provider: "Anthropic" },
   { name: "Claude Sonnet 4.6", provider: "Anthropic" },
   { name: "GPT-5.4", provider: "OpenAI" },

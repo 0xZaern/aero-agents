@@ -114,6 +114,7 @@ export default function ModelWheel({ models }: { models: ModelEntry[] }) {
 
       <span key={active} className="wheel-provider" aria-live="polite">
         {models[active].provider}
+        {models[active].isNew && <span className="wheel-new">New</span>}
       </span>
 
       <button type="button" className="wheel-arrow wheel-arrow-down" onClick={() => step(1)} aria-label="Next model">
