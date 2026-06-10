@@ -2,7 +2,7 @@ import { create } from 'zustand';
 import type { Agent, Conversation, Folder, Message, SearchResult, ToolEvent } from '../types';
 
 /* ─── localStorage helpers for Set<string> ─── */
-const COLLAPSED_KEY = 'aero.collapsedFolderIds';
+const COLLAPSED_KEY = 'conductor.collapsedFolderIds';
 
 function loadCollapsedFolderIds(): Set<string> {
   if (typeof window === 'undefined') return new Set();
@@ -24,8 +24,8 @@ function saveCollapsedFolderIds(ids: Set<string>): void {
 /* ─── localStorage cache: sidebar list + per-conversation messages ───
    Lets history render INSTANTLY on load / re-open while the network call
    revalidates in the background (stale-while-revalidate). Cleared on logout. */
-const CONVS_KEY = 'aero.conversations';
-const MSGCACHE_KEY = 'aero.msgcache';
+const CONVS_KEY = 'conductor.conversations';
+const MSGCACHE_KEY = 'conductor.msgcache';
 const MSGCACHE_MAX_CONVS = 30; // cap so we don't blow the localStorage quota
 
 export function clearChatCache(): void {
@@ -58,7 +58,7 @@ function saveMsgCache(cache: Record<string, Message[]>): void {
     let entries = Object.entries(cache);
     if (entries.length > MSGCACHE_MAX_CONVS) entries = entries.slice(-MSGCACHE_MAX_CONVS);
     localStorage.setItem(MSGCACHE_KEY, JSON.stringify(Object.fromEntries(entries)));
-  } catch { /* quota exceeded - skip */ }
+  } catch { /* quota exceeded — skip */ }
 }
 
 // Set messages for the current conversation AND mirror them to the persisted
@@ -212,7 +212,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
 
   setMessages: (messages) => set((state) => withCache(state, messages)),
 
-  // Warm the cache for a conversation WITHOUT touching the visible view -
+  // Warm the cache for a conversation WITHOUT touching the visible view —
   // used by the background prefetch that runs after login.
   primeCache: (convId, messages) =>
     set((state) => {

@@ -8,6 +8,7 @@ export interface SelOption {
   label: string;
   sub?: string;   // e.g. provider / model id
   right?: string; // e.g. cost summary
+  badge?: string; // small pill next to the label, e.g. "NEW"
   disabled?: boolean; // greyed + not selectable (e.g. non-vision model while an image is attached)
 }
 
@@ -52,23 +53,17 @@ export default function ComposerSelect({ options, value, onSelect, placeholder, 
         }}
       >
         {icon && <span style={{ color: 'var(--t-dim)', display: 'flex' }}>{icon}</span>}
-        <span style={{ maxWidth: 200, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{labelText}</span>
-        {locked ? (
-          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ marginLeft: 2, color: 'var(--t-dim)' }}>
-            <rect x="3" y="11" width="18" height="11" rx="2" /><path d="M7 11V7a5 5 0 0 1 10 0v4" />
-          </svg>
-        ) : (
-          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" style={{ marginLeft: 2, color: 'var(--t-dim)' }}>
-            <path d={open ? 'M6 15l6-6 6 6' : 'M6 9l6 6 6-6'} />
-          </svg>
-        )}
+        <span className="cs-label">{labelText}</span>
+        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" style={{ marginLeft: 2, color: 'var(--t-dim)' }}>
+          <path d={open ? 'M6 15l6-6 6 6' : 'M6 9l6 6 6-6'} />
+        </svg>
       </button>
 
       {/* locked → mini PRO popover */}
       {open && locked && (
         <div
           style={{
-            position: 'absolute', bottom: 'calc(100% + 6px)', left: 0, zIndex: 50, width: 220,
+            position: 'absolute', bottom: 'calc(100% + 6px)', left: 0, zIndex: 50, width: 'min(220px, calc(100vw - 24px))',
             background: 'var(--t-elev-2)', border: '1px solid var(--t-border-2)',
             borderRadius: 'var(--t-radius)', boxShadow: 'var(--t-shadow-lg)', padding: '12px 13px',
             display: 'flex', flexDirection: 'column', gap: 9,
@@ -93,7 +88,7 @@ export default function ComposerSelect({ options, value, onSelect, placeholder, 
         <div
           style={{
             position: 'absolute', bottom: 'calc(100% + 6px)', left: 0, zIndex: 50,
-            width, maxHeight: 320, overflowY: 'auto',
+            width: `min(${width}px, calc(100vw - 24px))`, maxHeight: 320, overflowY: 'auto',
             background: 'var(--t-elev-2)', border: '1px solid var(--t-border-2)',
             borderRadius: 'var(--t-radius)', boxShadow: 'var(--t-shadow-lg)', padding: 5,
           }}
@@ -121,6 +116,9 @@ export default function ComposerSelect({ options, value, onSelect, placeholder, 
                 <span style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: 8 }}>
                   <span style={{ fontSize: 12.5, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                     {active && <span style={{ color: 'var(--t-accent)', marginRight: 6 }}>›</span>}{o.label}
+                    {o.badge && (
+                      <span style={{ marginLeft: 6, fontSize: 8.5, fontWeight: 700, letterSpacing: 0.5, padding: '1px 4px', borderRadius: 3, background: 'var(--t-accent)', color: 'var(--bg)', verticalAlign: 'middle' }}>{o.badge}</span>
+                    )}
                   </span>
                   {o.sub && <span className="mono" style={{ fontSize: 10, color: 'var(--t-dim)', flexShrink: 0 }}>{o.sub}</span>}
                 </span>

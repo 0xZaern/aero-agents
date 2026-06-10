@@ -157,6 +157,9 @@ export default function ChatPage() {
   const [attachments, setAttachments] = useState<AttachmentOut[]>([]);
   const [uploading, setUploading] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
+  // On touch there's no hover, so tapping a message reveals its action buttons
+  // (copy/edit/regenerate). Tapping again, or another message, toggles it.
+  const [activeMsgId, setActiveMsgId] = useState<string | null>(null);
   const [editText, setEditText] = useState('');
   const [atBottom, setAtBottom] = useState(true);
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -235,7 +238,7 @@ export default function ChatPage() {
     let cancelled = false;
     getConversationMessages(convId)
       .then((msgs) => {
-        // Drop a stale response if the user switched chats mid-fetch - otherwise
+        // Drop a stale response if the user switched chats mid-fetch — otherwise
         // a slow load for the old chat clobbers the one now on screen.
         if (cancelled || useChatStore.getState().currentConversationId !== convId) return;
         setMessages(msgs);
@@ -251,23 +254,31 @@ export default function ChatPage() {
 
   // ── Background prefetch: once the sidebar list arrives, warm the message
   //    cache for recent chats (most-recent first) so opening one is instant.
-  //    Sequential + delayed so it never competes with the current view. ──
+  //    Delayed so it never competes with the current view, and run with a
+  //    small concurrency pool instead of a 30-deep serial chain (which warmed
+  //    the tail far too slowly on a slow connection). ──
   const prefetchedRef = useRef<Set<string>>(new Set());
   useEffect(() => {
     if (conversations.length === 0) return;
     let cancelled = false;
-    const t = setTimeout(async () => {
+    const t = setTimeout(() => {
       const targets = conversations
         .filter((c) => !useChatStore.getState().messageCache[c.id] && !prefetchedRef.current.has(c.id))
-        .slice(0, 30);
-      for (const c of targets) {
-        if (cancelled) return;
-        prefetchedRef.current.add(c.id);
-        try {
-          const msgs = await getConversationMessages(c.id);
-          if (!cancelled) useChatStore.getState().primeCache(c.id, msgs);
-        } catch { /* ignore - will load on real open */ }
-      }
+        .slice(0, 15);
+      let next = 0;
+      const CONCURRENCY = 4;
+      const worker = async () => {
+        while (!cancelled) {
+          const c = targets[next++];
+          if (!c) return;
+          prefetchedRef.current.add(c.id);
+          try {
+            const msgs = await getConversationMessages(c.id);
+            if (!cancelled) useChatStore.getState().primeCache(c.id, msgs);
+          } catch { /* ignore — will load on real open */ }
+        }
+      };
+      void Promise.all(Array.from({ length: CONCURRENCY }, worker));
     }, 600);
     return () => { cancelled = true; clearTimeout(t); };
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -317,7 +328,7 @@ export default function ChatPage() {
 
     if (!currentConversationId) {
       // Show the user's message instantly, before the (awaited) conversation
-      // creation round-trip - otherwise the composer flips to "thinking" with
+      // creation round-trip — otherwise the composer flips to "thinking" with
       // no message on screen until the network call resolves.
       setMessages([userMsg]);
       try {
@@ -459,22 +470,28 @@ export default function ChatPage() {
   const blockedImage = hasImage && !!selModel && !selModel.supportsVision;
 
   const modelOptions: SelOption[] = useMemo(() => {
+    // Anthropic models first, everything else after (stable sort keeps the
+    // backend's provider/name order within each group).
+    const ordered = [...models].sort(
+      (a, b) => (a.provider === 'anthropic' ? 0 : 1) - (b.provider === 'anthropic' ? 0 : 1),
+    );
     const opt = (m: Model): SelOption => ({
       id: m.id,
       label: m.displayName,
       sub: m.provider,
       right: `in ${cost1k(m.inputCostPer1K)} / out ${cost1k(m.outputCostPer1K)} · per 1k`,
+      ...(m.id === 'claude-fable-5' ? { badge: 'NEW' } : {}),
     });
-    if (!hasImage) return models.map(opt);
-    const vision = models.filter((m) => m.supportsVision).map(opt);
-    const rest = models.filter((m) => !m.supportsVision).map((m) => ({ ...opt(m), disabled: true, sub: `${m.provider} · no image` }));
+    if (!hasImage) return ordered.map(opt);
+    const vision = ordered.filter((m) => m.supportsVision).map(opt);
+    const rest = ordered.filter((m) => !m.supportsVision).map((m) => ({ ...opt(m), disabled: true, sub: `${m.provider} · no image` }));
     return [...vision, ...rest];
   }, [models, hasImage]);
 
   return (
     <div style={{ position: 'absolute', inset: 0, background: 'var(--bg)', display: 'flex', overflow: 'hidden' }}>
       <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', overflow: 'hidden', position: 'relative' }}>
-      <div ref={scrollRef} className="term-scroll" style={{ flex: 1, padding: '0 20px' }} onScroll={onScroll}>
+      <div ref={scrollRef} className="term-scroll" style={{ flex: 1, padding: '0 20px' }} onScroll={onScroll} onClick={() => setActiveMsgId(null)}>
         <div className="term-thread">
           {messages.length === 0 && !isStreaming && (
             <div className="term-empty" style={{ height: '52vh' }}>
@@ -489,7 +506,11 @@ export default function ChatPage() {
           )}
 
           {messages.map((m) => (
-            <div key={m.id} className={`msg-row ${m.role}`}>
+            <div
+              key={m.id}
+              className={`msg-row ${m.role}${activeMsgId === m.id ? ' active' : ''}`}
+              onClick={(e) => { e.stopPropagation(); setActiveMsgId((id) => (id === m.id ? null : m.id)); }}
+            >
               {m.role === 'user' ? (
                 editingId === m.id ? (
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 6, padding: '4px 0' }}>
@@ -512,7 +533,7 @@ export default function ChatPage() {
                       <span className="ps1">user@aero</span><span className="ps1s">:~$</span>
                       <span className="cmd">{m.content}</span>
                     </div>
-                    <div className="msg-actions">
+                    <div className="msg-actions" onClick={(e) => e.stopPropagation()}>
                       <CopyBtn text={m.content} />
                       {m.id === lastUserId && !isStreaming && (
                         <IconBtn title="Edit" onClick={() => startEdit(m)}>{ICON.edit}</IconBtn>
@@ -531,7 +552,7 @@ export default function ChatPage() {
                   /><span className="ps1s">:</span>
                   <AssistantBody content={m.content} />
                   {!isStreaming && (
-                    <div className="msg-actions">
+                    <div className="msg-actions" onClick={(e) => e.stopPropagation()}>
                       <CopyBtn text={m.content} />
                       {m.id === lastAssistantId && currentConversationId && (
                         <IconBtn title="Regenerate" onClick={handleRegenerate}>{ICON.regen}</IconBtn>
@@ -594,7 +615,7 @@ export default function ChatPage() {
         {/* composer */}
         <div className="term-composer">
           <div style={{ maxWidth: 820, margin: '0 auto' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 9, flexWrap: 'wrap' }}>
+          <div className="composer-ctrls" style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 9, flexWrap: 'wrap' }}>
             {selectedCrewId ? (
               <span className="term-input mono" style={{ width: 'auto', padding: '6px 12px', fontSize: 12, color: 'var(--t-dim)', opacity: 0.7 }}>
                 model · - (team)
@@ -615,7 +636,6 @@ export default function ChatPage() {
               width={240}
               locked={!isPro}
               lockedMessage="Agents are a PRO feature. Upgrade to chat with agents."
-              icon={<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="4" y="8" width="16" height="12" rx="2" /><path d="M12 8V4M8 14h.01M16 14h.01" /></svg>}
               options={[{ id: '', label: 'no agent' }, ...agents.map((a): SelOption => ({ id: a.id, label: a.name, sub: a.modelId }))]}
             />
             {crews.length > 0 && (
@@ -626,7 +646,6 @@ export default function ChatPage() {
                 width={240}
                 locked={!isPro}
                 lockedMessage="Teams are a PRO feature. Upgrade to run teams."
-                icon={<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="9" cy="8" r="3" /><path d="M3 20a6 6 0 0 1 12 0M16 6a3 3 0 0 1 0 6M21 20a6 6 0 0 0-4-5.65" /></svg>}
                 options={[{ id: '', label: 'no team' }, ...crews.map((c): SelOption => ({ id: c.id, label: c.name, sub: c.processType }))]}
               />
             )}
@@ -693,6 +712,7 @@ export default function ChatPage() {
                 className="term-textarea term-prompt"
                 rows={2}
                 value={input}
+                onFocus={() => setActiveMsgId(null)}
                 disabled={blockedImage}
                 placeholder={blockedImage
                   ? `${selModel?.displayName ?? 'this model'} can't read images - choose a vision-capable model above`
