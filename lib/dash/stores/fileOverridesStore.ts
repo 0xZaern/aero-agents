@@ -1,6 +1,6 @@
 /**
  * fileOverridesStore - zustand slice for per-conversation file overrides
- * (edits / created / deleted), kept separate from chatStore. Ported from an earlier prototype.
+ * (edits / created / deleted), kept separate from chatStore. Ported from aero.
  */
 
 import { create } from "zustand";

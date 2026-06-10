@@ -3,7 +3,7 @@
 /**
  * FilesPanel - Files sidebar for the chat. Shows a folder tree of files the AI
  * wrote (extracted from code blocks) merged with the user's edits. Full feature
- * set ported from an earlier prototype: view, edit (Ctrl+S / Tab / unsaved guard), rename,
+ * set ported from aero: view, edit (Ctrl+S / Tab / unsaved guard), rename,
  * move (drag between folders), new file, new folder, delete, revert-to-AI,
  * copy, download one / ZIP, shiki syntax highlighting.
  */

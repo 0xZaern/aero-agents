@@ -1,7 +1,7 @@
 /**
  * extractFiles.ts - scans assistant messages for fenced code blocks that carry a
  * detectable filename and returns them as ExtractedFile[], deduped by path
- * (latest occurrence wins). Ported from an earlier prototype., self-contained.
+ * (latest occurrence wins). Ported from aero, self-contained.
  */
 
 import type { ExtractedFile, Message } from "./types";

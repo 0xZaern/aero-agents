@@ -5,7 +5,7 @@
  *               edit (then AI wins, since it already saw the edit via context)
  *   created   → user file
  *   no override → source 'ai'
- * Ported from an earlier prototype.
+ * Ported from aero.
  */
 
 import type { ExtractedFile, FileOverride, MergedFile } from "./types";
