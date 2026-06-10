@@ -1,13 +1,16 @@
-// USDC-on-Base payment via the injected wallet (no wagmi/viem). Mirrors
-// aero's useUsdcPayment: transfer USDC to the treasury, wait for the
-// receipt, then have the backend verify the tx and credit the account.
+// VVV (Venice Token) payment on Base via the injected wallet. Mirrors
+// payment.ts (USDC) but for the dev-API credit packs: transfer a fixed VVV
+// amount to the treasury, wait for the receipt, then have the backend verify
+// the tx and credit the account.
 
-import { verifyPayment, getPaymentConfig } from './api';
+import { verifyVvvPayment, getApiConfig } from './api';
 
-const USDC_CONTRACT = '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913';
+// VVV token (NOT the staking contract). Backend is the source of truth via
+// getApiConfig(); this is only a fallback if that call fails.
+const VVV_CONTRACT_FALLBACK = '0xacfE6019Ed1A7Dc6f7B508C02d1b04ec88cC21bf';
 const TREASURY_FALLBACK = '0x8C33e20E5b313E3740dd24177205B7e623Bf2292';
 const BASE_CHAIN_ID = '0x2105'; // 8453
-const USDC_DECIMALS = 6;
+const VVV_DECIMALS = 18;
 
 export type PayStep = 'idle' | 'confirming' | 'pending' | 'verifying' | 'success' | 'error';
 
@@ -56,17 +59,24 @@ async function waitForReceipt(eth: Eth, hash: string, tries = 80): Promise<void>
   throw new Error('Timed out waiting for confirmation');
 }
 
-export interface PayResult { credits: number; plan: string; proExpiresAt: string | null }
+// Convert a decimal VVV amount (e.g. 110) to base units (×10^18) without float rounding.
+function toBaseUnits(amount: number, decimals: number): bigint {
+  const [whole, frac = ''] = String(amount).split('.');
+  const fracPadded = (frac + '0'.repeat(decimals)).slice(0, decimals);
+  return BigInt(whole + fracPadded);
+}
+
+export interface VvvPayResult { credits: number; creditsAdded: number; vvvPaid: number }
 
 /**
- * Send `amount` USD of USDC to the treasury and verify. `onStep` reports
- * progress. Returns the updated credits/plan on success; throws on failure.
+ * Send `vvvAmount` VVV to the treasury for `packId` and verify. `onStep`
+ * reports progress. Returns the updated balance on success; throws on failure.
  */
-export async function sendUsdcPayment(
-  amount: number,
-  paymentType: 'credits' | 'pro',
+export async function sendVvvPayment(
+  packId: string,
+  vvvAmount: number,
   onStep: (s: PayStep) => void,
-): Promise<PayResult> {
+): Promise<VvvPayResult> {
   const eth = getEth();
   if (!eth) throw new Error('No wallet detected - install MetaMask');
 
@@ -79,32 +89,39 @@ export async function sendUsdcPayment(
     await ensureBase(eth);
 
     let treasury = TREASURY_FALLBACK;
-    try { const cfg = await getPaymentConfig(); if (cfg.treasuryWallet) treasury = cfg.treasuryWallet; } catch { /* fallback */ }
+    let contract = VVV_CONTRACT_FALLBACK;
+    let decimals = VVV_DECIMALS;
+    try {
+      const cfg = await getApiConfig();
+      if (cfg.treasuryWallet) treasury = cfg.treasuryWallet;
+      if (cfg.veniceContract) contract = cfg.veniceContract;
+      if (cfg.veniceDecimals) decimals = cfg.veniceDecimals;
+    } catch { /* fallback */ }
 
-    const raw = BigInt(Math.round(amount * 10 ** USDC_DECIMALS));
+    const raw = toBaseUnits(vvvAmount, decimals);
     const data = encodeTransfer(treasury, raw);
 
     const hash = (await eth.request({
       method: 'eth_sendTransaction',
-      params: [{ from, to: USDC_CONTRACT, data }],
+      params: [{ from, to: contract, data }],
     })) as string;
 
     onStep('pending');
     await waitForReceipt(eth, hash);
 
     onStep('verifying');
-    const result = await verifyPayment(hash, paymentType);
+    const result = await verifyVvvPayment(hash, packId);
     if (!result.success) throw new Error('Payment verification failed');
 
     onStep('success');
-    return { credits: result.credits, plan: result.plan, proExpiresAt: result.proExpiresAt };
+    return { credits: result.credits, creditsAdded: result.creditsAdded, vvvPaid: result.vvvPaid };
   } catch (err) {
     onStep('error');
     const m = (err instanceof Error ? err.message : String(err)).toLowerCase();
     if (m.includes('user rejected') || m.includes('user denied') || m.includes('rejected the request')) {
       throw new Error('Transaction cancelled');
     }
-    if (m.includes('insufficient')) throw new Error('Insufficient USDC balance');
+    if (m.includes('insufficient')) throw new Error('Insufficient VVV balance');
     throw err instanceof Error ? err : new Error('Payment failed');
   }
 }

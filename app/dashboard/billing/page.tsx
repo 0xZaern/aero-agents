@@ -22,7 +22,7 @@ function Panel({ label, children }: { label: string; children: React.ReactNode }
   );
 }
 
-// Compact stat tile (plan / balance) - no pills, matches the analyzer aesthetic.
+// Compact stat tile (plan / balance) — no pills, matches the analyzer aesthetic.
 function StatCard({ label, value, sub, accent }: { label: string; value: string; sub?: string; accent?: boolean }) {
   return (
     <div className="term-panel" style={{ padding: '14px 16px', display: 'flex', flexDirection: 'column', gap: 6 }}>
@@ -108,7 +108,7 @@ export default function BillingPage() {
           </div>
         )}
 
-        {/* account status - two stat tiles */}
+        {/* account status — two stat tiles */}
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
           <StatCard
             label="plan"
