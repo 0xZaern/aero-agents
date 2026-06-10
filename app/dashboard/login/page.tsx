@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 
 // The old full-page login is gone. Hitting the dashboard while logged out (or
 // logging out) sends you back to the landing. The connect modal only opens when
-// the user explicitly clicks "Launch App" - it's never forced on the landing.
+// the user explicitly clicks "Launch App" — it's never forced on the landing.
 export default function LoginRedirect() {
   const router = useRouter();
 
