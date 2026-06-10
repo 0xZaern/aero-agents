@@ -37,7 +37,7 @@ const MAX_TWEET_CHARS = 2000;
 const MAX_NARRATIVES = 20;
 const CONV_STORAGE_KEY = 'aero.xagent.convId';
 
-// ─── Reply parsing (ported from an earlier prototype) ──────────────────────────
+// ─── Reply parsing (ported from aero XAgentPanel) ──────────────────────────
 interface XAgentReply { text: string; style: string; charCount: number }
 interface XAgentData { replies: XAgentReply[]; tips: string[] }
 

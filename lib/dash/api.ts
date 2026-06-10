@@ -11,9 +11,9 @@ import type {
   Model,
 } from './types';
 
-// Call the backend DIRECTLY when NEXT_PUBLIC_API_URL is set (e.g. a dedicated backend host
-// URL) - same origin the WebSocket uses. This skips the Vercel rewrite proxy
-// hop that otherwise sits on every REST request (browser → Vercel → the backend).
+// Call the backend DIRECTLY when NEXT_PUBLIC_API_URL is set (e.g. the Railway
+// URL) — same origin the WebSocket uses. This skips the Vercel rewrite proxy
+// hop that otherwise sits on every REST request (browser → Vercel → Railway).
 // When unset (local dev), fall back to a relative base so next.config rewrites
 // proxy /api/* to localhost:8000.
 const BASE_URL = process.env.NEXT_PUBLIC_API_URL ?? '';
@@ -84,7 +84,7 @@ export const getNonce = (address: string) =>
   request<{ nonce: string }>(`/api/auth/nonce?address=${address}`);
 
 export const verifySignature = (message: string, signature: string) =>
-  request<{ token: string; user: { id: string; walletAddress: string; credits: number; plan: string; proExpiresAt?: string | null } }>(
+  request<{ token: string; user: { id: string; walletAddress: string; credits: number; plan: string; proExpiresAt?: string | null; themeOverrides?: string | null } }>(
     '/api/auth/verify',
     {
       method: 'POST',
@@ -364,6 +364,87 @@ export const getPaymentHistory = () =>
 
 export const getPaymentConfig = () =>
   request<PaymentConfig>('/api/payments/config');
+
+/* ─── Developer API (keys, VVV packs, usage) ─── */
+
+export interface ApiKey {
+  id: string;
+  prefix: string;
+  label: string;
+  revoked: boolean;
+  createdAt: string;
+  lastUsedAt: string | null;
+}
+
+export interface ApiKeyCreated {
+  id: string;
+  key: string;        // raw sk_aero_... — shown ONCE
+  prefix: string;
+  label: string;
+  createdAt: string;
+}
+
+export interface VvvPack {
+  id: string;
+  label: string;
+  vvv: number;
+  credits: number;
+}
+
+export interface ApiConfig {
+  treasuryWallet: string;
+  veniceContract: string;
+  veniceDecimals: number;
+  chainId: number;
+  packs: VvvPack[];
+  endpoints: number;  // live /v1 route count from the backend (auto-updates)
+}
+
+export interface VvvVerifyResponse {
+  success: boolean;
+  packId: string;
+  vvvPaid: number;
+  creditsAdded: number;
+  credits: number;
+}
+
+export interface ApiUsageRow {
+  id: string;
+  endpoint: string;
+  modelId: string | null;
+  inputTokens: number;
+  outputTokens: number;
+  creditsSpent: number;
+  statusCode: number;
+  createdAt: string;
+}
+
+export interface ApiBalance {
+  apiCredits: number;
+}
+
+export const getApiConfig = () => request<ApiConfig>('/api/dev/config');
+
+export const getApiBalance = () => request<ApiBalance>('/api/dev/balance');
+
+export const listApiKeys = () => request<ApiKey[]>('/api/dev/keys');
+
+export const createApiKey = (label: string) =>
+  request<ApiKeyCreated>('/api/dev/keys', {
+    method: 'POST',
+    body: JSON.stringify({ label }),
+  });
+
+export const revokeApiKey = (id: string) =>
+  request<{ success: boolean; id: string }>(`/api/dev/keys/${id}`, { method: 'DELETE' });
+
+export const getApiUsage = () => request<ApiUsageRow[]>('/api/dev/usage');
+
+export const verifyVvvPayment = (txHash: string, packId: string) =>
+  request<VvvVerifyResponse>('/api/payments/verify-vvv', {
+    method: 'POST',
+    body: JSON.stringify({ tx_hash: txHash, pack_id: packId }),
+  });
 
 /* ─── Uploads ─── */
 export async function uploadFile(file: File): Promise<AttachmentOut> {

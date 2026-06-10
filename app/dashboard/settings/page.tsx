@@ -212,7 +212,7 @@ function TelegramPanel() {
       <Panel label="telegram">
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 10 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-            <span className="pill active">linked</span>
+            <span className="term-tag active">linked</span>
             <span style={{ fontSize: 12, color: 'var(--t-muted)', fontFamily: 'var(--font-m)' }}>
               id {state.telegramId}
             </span>
