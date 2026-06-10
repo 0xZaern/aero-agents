@@ -48,18 +48,23 @@ export default function AgentsScroll() {
     () => {
       const el = wrap.current, tr = track.current;
       if (!el || !tr) return;
-      const distance = () => tr.scrollWidth - window.innerWidth + 96;
-      gsap.to(tr, {
-        x: () => -distance(),
-        ease: "none",
-        scrollTrigger: {
-          trigger: el,
-          start: "top top",
-          end: () => "+=" + distance(),
-          pin: true,
-          scrub: 0.5,
-          invalidateOnRefresh: true,
-        },
+      // Desktop-only horizontal-scroll gimmick. On phones the track is a normal
+      // vertical stack (see CSS), so we skip the pin + x-translate entirely.
+      const mm = gsap.matchMedia();
+      mm.add("(min-width: 768px)", () => {
+        const distance = () => tr.scrollWidth - window.innerWidth + 96;
+        gsap.to(tr, {
+          x: () => -distance(),
+          ease: "none",
+          scrollTrigger: {
+            trigger: el,
+            start: "top top",
+            end: () => "+=" + distance(),
+            pin: true,
+            scrub: 0.5,
+            invalidateOnRefresh: true,
+          },
+        });
       });
     },
     { scope: wrap }

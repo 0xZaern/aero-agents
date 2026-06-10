@@ -128,6 +128,11 @@ summary {
   margin: 0 auto;
   padding: 0 2rem;
 }
+@media (max-width: 480px) {
+  .container {
+    padding: 0 1.1rem;
+  }
+}
 
 .section {
   padding: clamp(6rem, 14vh, 11rem) 0;
@@ -297,6 +302,141 @@ summary {
 .aero-nav-links a:hover {
   color: var(--text);
 }
+/* "NEW" tag clipped to the top-right corner of the Models nav link, drawing the
+   eye to the Fable 5 add. */
+.aero-nav-link {
+  position: relative;
+  display: inline-block;
+}
+.aero-nav-badge {
+  position: absolute;
+  top: -0.7em;
+  left: calc(100% - 0.15em);
+  font-family: var(--font-mono);
+  font-size: 0.5rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--accent-contrast);
+  background: var(--accent);
+  padding: 0.1rem 0.28rem;
+  border-radius: 3px;
+  line-height: 1;
+  white-space: nowrap;
+  pointer-events: none;
+  animation: navBadgePulse 2.2s ease-in-out infinite;
+}
+@keyframes navBadgePulse {
+  0%, 100% { opacity: 1; box-shadow: 0 0 0 0 var(--glow); }
+  50% { opacity: 0.78; box-shadow: 0 0 0 4px transparent; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .aero-nav-badge { animation: none; }
+}
+
+/* First-visit coachmark popping out of the Models nav button. */
+.aero-nav-hint-anchor {
+  position: relative;
+  display: inline-block;
+}
+.fable-hint {
+  position: absolute;
+  top: calc(100% + 16px);
+  left: 50%;
+  z-index: 70;
+  width: 244px;
+  text-align: left;
+  background: var(--surface);
+  border: 1px solid var(--border-strong);
+  border-radius: 8px;
+  padding: 0.95rem 1rem 1rem;
+  box-shadow: 0 16px 44px rgba(0, 0, 0, 0.55);
+  transform-origin: top center;
+  animation:
+    fableHintIn 0.45s cubic-bezier(0.16, 1, 0.3, 1) both,
+    fableHintBob 2.6s ease-in-out 0.6s infinite;
+}
+/* caret pointing up at the Models button */
+.fable-hint::before {
+  content: "";
+  position: absolute;
+  top: -6px;
+  left: 50%;
+  width: 11px;
+  height: 11px;
+  background: var(--surface);
+  border-left: 1px solid var(--border-strong);
+  border-top: 1px solid var(--border-strong);
+  transform: translateX(-50%) rotate(45deg);
+}
+.fable-hint-close {
+  position: absolute;
+  top: 0.45rem;
+  right: 0.55rem;
+  font-size: 1rem;
+  line-height: 1;
+  color: var(--text-dim);
+  background: none;
+  border: none;
+  cursor: pointer;
+  transition: color 0.2s;
+}
+.fable-hint-close:hover {
+  color: var(--text);
+}
+.fable-hint-title {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--text);
+}
+.fable-hint-tag {
+  font-family: var(--font-mono);
+  font-size: 0.5rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--accent-contrast);
+  background: var(--accent);
+  padding: 0.1rem 0.3rem;
+  border-radius: 3px;
+  line-height: 1;
+}
+.fable-hint-body {
+  margin: 0.4rem 0 0.75rem;
+  font-size: 0.76rem;
+  line-height: 1.45;
+  color: var(--text-muted);
+}
+.fable-hint-cta {
+  display: block;
+  margin-top: 0.1rem;
+  text-align: right;
+  font-family: var(--font-sans);
+  font-size: 0.76rem;
+  font-weight: 600;
+  color: var(--text);
+  transition: color 0.2s;
+}
+.fable-hint-cta:hover {
+  color: var(--accent);
+}
+@keyframes fableHintIn {
+  from { opacity: 0; transform: translate(-50%, -8px) scale(0.96); }
+  to { opacity: 1; transform: translate(-50%, 0) scale(1); }
+}
+@keyframes fableHintBob {
+  0%, 100% { transform: translate(-50%, 0); }
+  50% { transform: translate(-50%, -5px); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .fable-hint { animation: fableHintIn 0.01s both; }
+}
+@media (max-width: 760px) {
+  .fable-hint { display: none; }
+}
 .theme-toggle {
   width: 34px;
   height: 34px;
@@ -314,8 +454,118 @@ summary {
   padding: 0.55rem 1.3rem;
   font-size: 0.8rem;
 }
+/* Hamburger only visible on mobile; desktop nav links hide it */
+.aero-nav-hamburger {
+  display: none;
+  width: 36px;
+  height: 36px;
+  place-items: center;
+  border-radius: 8px;
+  color: var(--text-muted);
+  border: 1px solid var(--border-strong);
+  transition: background 0.25s, color 0.25s;
+  flex-shrink: 0;
+}
+.aero-nav-hamburger:hover {
+  background: var(--surface-hover);
+  color: var(--text);
+}
+
+/* Mobile drawer backdrop */
+.aero-nav-backdrop {
+  display: none;
+  position: fixed;
+  inset: 0;
+  z-index: 998;
+  background: rgba(0, 0, 0, 0.55);
+  animation: navBackdropIn 0.3s ease both;
+}
+@keyframes navBackdropIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+/* Mobile drawer panel */
+.aero-nav-drawer {
+  display: none;
+  position: fixed;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 999;
+  width: min(300px, 85vw);
+  background: var(--bg);
+  border-left: 1px solid var(--border);
+  flex-direction: column;
+  padding: 1.5rem 1.25rem;
+  transform: translateX(100%);
+  transition: transform 0.45s cubic-bezier(0.16, 1, 0.3, 1);
+  overflow-y: auto;
+}
+.aero-nav-drawer nav {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  padding-top: 4rem; /* clear the fixed nav bar */
+}
+.aero-nav-drawer-link {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 1.05rem;
+  font-weight: 500;
+  color: var(--text-muted);
+  padding: 0.75rem 0.75rem;
+  border-radius: 8px;
+  transition: background 0.2s, color 0.2s;
+}
+.aero-nav-drawer-link:hover {
+  background: var(--surface-hover);
+  color: var(--text);
+}
+.aero-nav-badge-inline {
+  position: static;
+  font-size: 0.5rem;
+  padding: 0.1rem 0.3rem;
+  border-radius: 3px;
+  line-height: 1.4;
+  vertical-align: middle;
+}
+.aero-nav-drawer-foot {
+  margin-top: auto;
+  padding-top: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  border-top: 1px solid var(--border);
+}
+
 @media (max-width: 760px) {
+  /* Links are display:none below, which drops them out of the grid entirely —
+     that would auto-place .aero-nav-right into the middle column. Collapse to
+     two columns so the hamburger lands flush against the right edge. */
+  .aero-nav-inner {
+    grid-template-columns: 1fr auto;
+  }
   .aero-nav-links {
+    display: none;
+  }
+  .aero-nav-hamburger {
+    display: grid;
+  }
+  .aero-nav-drawer {
+    display: flex;
+  }
+  .aero-nav-drawer.open {
+    transform: translateX(0);
+  }
+  .aero-nav-backdrop {
+    display: block;
+  }
+  /* hide the social + Launch App from the top-right on mobile to save space;
+     they're in the drawer footer instead */
+  .aero-nav-right .aero-nav-social,
+  .aero-nav-right .aero-nav-cta {
     display: none;
   }
 }
@@ -324,8 +574,16 @@ summary {
 .terrain-bg {
   position: fixed;
   inset: 0;
-  width: 100vw;
+  /* inset:0 already spans the viewport; 100vw would add the scrollbar width and
+     cause a sliver of horizontal overflow on desktop. Use 100% (of the fixed
+     element's viewport-sized containing block). */
+  width: 100%;
   height: 100vh;
+  /* dvh (dynamic) not svh: this fixed background must always cover the full
+     visible viewport. svh is the *smallest* height, so when the mobile URL bar
+     retracts the viewport grows past it and leaves a black strip at the bottom.
+     dvh tracks the live viewport and matches the canvas's window.innerHeight. */
+  height: 100dvh;
   z-index: 0;
   opacity: 0; /* JS drives opacity per-frame (fade-in + dissolve on scroll) */
   pointer-events: none;
@@ -527,6 +785,38 @@ summary {
   gap: 1.2rem;
   max-width: 560px;
 }
+/* "Just added · Claude Fable 5" callout above the models headline. */
+.models-kicker {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.55rem;
+  align-self: flex-start;
+  font-family: var(--font-mono);
+  font-size: 0.68rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  animation: kickerPulse 1.8s ease-in-out infinite;
+}
+@keyframes kickerPulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.55; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .models-kicker { animation: none; }
+}
+.models-kicker .models-kicker-tag {
+  font-weight: 600;
+  color: var(--accent-contrast);
+  background: var(--accent);
+  padding: 0.12rem 0.4rem;
+  border-radius: 3px;
+  line-height: 1;
+}
+.models-kicker strong {
+  color: var(--text);
+  font-weight: 600;
+}
 .models-stats {
   display: flex;
   gap: clamp(2rem, 5vw, 3.5rem);
@@ -646,6 +936,19 @@ summary {
   z-index: 2;
   /* same duration + easing as the names so it rises into place in sync */
   animation: wheelProvIn 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+}
+/* "New" tag beside the provider when the active model is newly added. */
+.wheel-new {
+  display: inline-block;
+  margin-left: 0.6em;
+  vertical-align: middle;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  color: var(--accent-contrast);
+  background: var(--accent);
+  padding: 0.12em 0.4em;
+  border-radius: 3px;
+  animation: navBadgePulse 2.2s ease-in-out infinite;
 }
 @keyframes wheelProvIn {
   from {
@@ -864,6 +1167,12 @@ summary {
   .stats-grid {
     grid-template-columns: 1fr 1fr;
     gap: 2.5rem 1rem;
+  }
+}
+@media (max-width: 380px) {
+  .stats-grid {
+    grid-template-columns: 1fr;
+    gap: 1.8rem;
   }
 }
 
@@ -1104,6 +1413,11 @@ summary {
   .footer-grid {
     grid-template-columns: 1fr 1fr;
   }
+  /* Brand + tagline + socials get their own full-width row on top; the two
+     link groups (Product, Company) then sit side by side in the row below. */
+  .footer-brand {
+    grid-column: 1 / -1;
+  }
   .footer-bottom {
     flex-direction: column;
     gap: 0.8rem;
@@ -1292,7 +1606,7 @@ summary {
   font-family: var(--font-montserrat);
   font-style: italic;
   font-weight: 600;
-  font-size: clamp(2.4rem, 6vw, 4rem);
+  font-size: clamp(1.7rem, 6vw, 4rem);
   line-height: 1;
   letter-spacing: -0.03em;
   margin-bottom: 1.1rem;
@@ -1724,6 +2038,27 @@ summary {
   padding: 0.1em 0.4em;
   border-radius: 4px;
 }
+.legal-pre {
+  font-family: var(--font-mono);
+  font-size: 0.8em;
+  line-height: 1.6;
+  color: var(--text);
+  background: var(--surface-hover);
+  border: 1px solid var(--border);
+  padding: 0.9rem 1rem;
+  border-radius: 8px;
+  overflow-x: auto;
+  margin: 0.6rem 0 1.2rem;
+  white-space: pre;
+}
+.legal-method {
+  font-family: var(--font-mono);
+  font-size: 0.78em;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  color: var(--accent);
+  margin-right: 0.4rem;
+}
 .legal-table {
   width: 100%;
   border: 1px solid var(--border);
@@ -1922,6 +2257,105 @@ summary {
   .docs-main {
     border-left: none;
     padding: 2rem 1.25rem 5rem;
+  }
+}
+
+/* ════════════════════════════════════════════════════════════════════════
+   MOBILE STATIC FALLBACKS (<= 767px)  — placed last so these win the cascade.
+   The pinned / scroll-driven sections (hero flythrough, manifesto scrub,
+   how-it-works camera pan, agents horizontal scroll, models scroll-lock) are
+   gated to desktop in JS via gsap.matchMedia("(min-width: 768px)"). Below that
+   the GSAP never runs, so each section stands on its own as a plain block.
+   ════════════════════════════════════════════════════════════════════════ */
+@media (max-width: 767px) {
+  /* HERO — fit the visible viewport (svh) so the title isn't pushed off. */
+  .hero {
+    min-height: 100svh;
+  }
+
+  /* HOW IT WORKS — replace the 200vw 2x2 camera stage with a stacked list. */
+  .how {
+    height: auto;
+    min-height: 0;
+    overflow: visible;
+    padding: 5rem 0;
+  }
+  .how-heading {
+    position: static;
+    transform: none;
+    margin: 0 auto 2.5rem;
+  }
+  .how-viewport {
+    position: static;
+    width: 100%;
+    height: auto;
+    overflow: visible;
+  }
+  .how-stage {
+    position: static;
+    width: 100%;
+    height: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 1.25rem;
+    transform: none !important; /* clear any stale GSAP transform on resize */
+  }
+  .how-cell {
+    position: static;
+    width: 100%;
+    height: auto;
+    opacity: 1 !important; /* base is 0 (GSAP-revealed); force visible here */
+    transform: none !important;
+    padding: 0 1.25rem;
+  }
+  .how-cell-inner {
+    flex-direction: column;
+    align-items: flex-start;
+    text-align: left;
+    gap: 1.25rem;
+    padding: 1.6rem;
+  }
+  .how-tracer {
+    display: none; /* the border-tracer geometry is desktop-only */
+  }
+
+  /* AGENTS — keep the cards in a horizontal row, but make it a finger-swipe
+     carousel (native scroll + snap) instead of the desktop pinned auto-scroll.
+     Cards are sized so the next one peeks, signalling there's more to swipe. */
+  .agents-scroll {
+    height: auto;
+    min-height: 0;
+    overflow: visible;
+    padding: 5rem 0;
+    gap: 2rem;
+  }
+  .agents-track {
+    flex-direction: row;
+    align-items: stretch;
+    transform: none !important; /* clear any stale GSAP x on resize */
+    overflow-x: auto;
+    scroll-snap-type: x mandatory;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none; /* Firefox: hide the bar, swipe is the affordance */
+    padding: 0.5rem 1.25rem 1rem;
+    gap: 1rem;
+  }
+  .agents-track::-webkit-scrollbar {
+    display: none;
+  }
+  .ag-card,
+  .ag-end {
+    flex: none;
+    width: 78vw;
+    max-width: 300px;
+    min-height: 0;
+    scroll-snap-align: center;
+  }
+  .ag-track-label {
+    flex: none;
+    scroll-snap-align: center;
+    align-self: center;
+    text-align: left;
   }
 }
 

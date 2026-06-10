@@ -33,7 +33,7 @@ const I = {
 
 interface CtxMenu { conv: Conversation; x: number; y: number; }
 
-export default function Sidebar() {
+export default function Sidebar({ onNavigate }: { onNavigate?: () => void } = {}) {
   const pathname = usePathname();
   const router = useRouter();
 
@@ -93,9 +93,9 @@ export default function Sidebar() {
   const folderChats = (fid: string) => conversations.filter((c) => !c.isPinned && c.folderId === fid && match(c)).sort(byRecent);
 
   function newSession() {
-    setCurrentConversation(null); setMessages([]); router.push('/dashboard/chat');
+    setCurrentConversation(null); setMessages([]); router.push('/dashboard/chat'); onNavigate?.();
   }
-  function openSession(id: string) { setCurrentConversation(id); router.push('/dashboard/chat'); }
+  function openSession(id: string) { setCurrentConversation(id); router.push('/dashboard/chat'); onNavigate?.(); }
   function openTask(convId: string | null) { if (convId) openSession(convId); }
 
   async function submitNewFolder() {

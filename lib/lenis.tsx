@@ -7,6 +7,13 @@ import { ScrollTrigger } from "gsap/ScrollTrigger";
 
 gsap.registerPlugin(ScrollTrigger);
 
+// On mobile, the browser fires a resize every time the URL bar shows/hides
+// during scroll. Without this, ScrollTrigger recomputes every pin mid-scroll
+// and the page visibly jumps ("scroll moves me down"), worst at the boundary
+// between two pinned sections (hero → manifesto). Ignoring those tiny mobile
+// resizes keeps the pin ranges stable while scrolling.
+ScrollTrigger.config({ ignoreMobileResize: true });
+
 const LenisContext = createContext<{ lenis: Lenis | null }>({ lenis: null });
 export const useLenis = () => useContext(LenisContext);
 

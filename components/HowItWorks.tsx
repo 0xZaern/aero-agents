@@ -102,6 +102,12 @@ export default function HowItWorks() {
     () => {
       const el = wrap.current, st = stage.current;
       if (!el || !st) return;
+      // The entire 2x2 camera-pan choreography is desktop-only — its layout is
+      // built from GSAP transforms (a 200vw stage), which is meaningless on a
+      // phone. Below 768px we skip it all and the steps render as a static
+      // vertical stack (see the `.how` mobile CSS).
+      const mm = gsap.matchMedia();
+      mm.add("(min-width: 768px)", () => {
       const cells = gsap.utils.toArray<HTMLElement>(".how-cell", el);
 
       // ── Build the tracer geometry (stage-local pixels). ───────────────────
@@ -258,6 +264,7 @@ export default function HowItWorks() {
       tl.to({}, { duration: 0.5 });
       // remove the dynamically-created tracer paths on cleanup / hot-reload
       return () => { svgEl.innerHTML = ""; };
+      });
     },
     { scope: wrap }
   );

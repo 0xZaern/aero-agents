@@ -105,7 +105,7 @@
   display: inline-flex; align-items: center; gap: 7px;
   padding: 5px 11px;
   border: 1px solid var(--t-border-2);
-  border-radius: 999px;
+  border-radius: var(--t-radius-sm);
   background: var(--t-elev);
   color: var(--t-muted);
   font-family: var(--font-m);
@@ -352,6 +352,7 @@
   pointer-events: none;
 }
 .msg-row:hover .msg-actions,
+.msg-row.active .msg-actions,
 .msg-actions:focus-within { opacity: 1; transform: none; pointer-events: auto; }
 .msg-iconbtn {
   display: grid;
@@ -425,11 +426,15 @@
 }
 .term-table td { padding: 11px 14px; border-bottom: 1px solid var(--t-border); color: var(--t-muted); }
 .term-table tr:hover td { background: var(--t-hover); color: var(--t-text); }
+/* Tables sit in this wrapper so an over-wide table scrolls inside its panel
+   instead of pushing the whole page sideways. */
+.term-table-wrap { max-width: 100%; overflow-x: auto; }
+.term-table .col-x { width: 1%; white-space: nowrap; }  /* revoke × hugs its content */
 
 /* ─── pills ──────────────────────────────────────────────────────────── */
 .pill {
   display: inline-flex; align-items: center; gap: 6px;
-  padding: 3px 10px; border-radius: 999px; font-family: var(--font-m);
+  padding: 3px 10px; border-radius: var(--t-radius-sm); font-family: var(--font-m);
   font-size: 10px; letter-spacing: 0.04em; text-transform: uppercase;
   border: 1px solid var(--t-border-2); color: var(--t-muted); background: var(--t-elev);
 }
@@ -437,6 +442,20 @@
 .pill.active, .pill.success, .pill.running { color: var(--t-accent); border-color: var(--t-accent-dim); }
 .pill.paused { color: var(--t-dim); }
 .pill.error, .pill.failed { color: #f87171; border-color: #7f3636; }
+
+/* Composer selector label (model/agent/team trigger text). Caps width so a long
+   model name truncates instead of pushing the row to wrap. */
+.cs-label { max-width: 200px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+/* Squared status tag (no leading dot, button-matched corners). Used for the
+   telegram "linked" badge so it reads as a label, not a pill. */
+.term-tag {
+  display: inline-flex; align-items: center;
+  padding: 3px 10px; border-radius: var(--t-radius-sm); font-family: var(--font-m);
+  font-size: 10px; letter-spacing: 0.04em; text-transform: uppercase;
+  border: 1px solid var(--t-border-2); color: var(--t-muted); background: var(--t-elev);
+}
+.term-tag.active { color: var(--t-accent); border-color: var(--t-accent-dim); }
 
 /* ─── helpers ────────────────────────────────────────────────────────── */
 .term-scroll { height: 100%; overflow-y: auto; }
@@ -589,7 +608,8 @@
   margin: 12px 0;
   overflow: hidden;
   background: var(--t-bg-2);
-  max-width: 760px;
+  /* Default: never exceed container; on wide screens capped to 760px via media query below */
+  max-width: 100%;
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.6);
 }
 /* code-block body surface matches the sidebar (--t-bg-2); border+shadow keep it a box */
@@ -720,7 +740,7 @@
   border-color: var(--t-accent-dim);
   box-shadow: 0 0 0 3px var(--t-accent-soft);
 }
-/* the textarea inside the field is borderless - the field owns the chrome */
+/* the textarea inside the field is borderless — the field owns the chrome */
 .composer-field .term-textarea {
   border: none; background: transparent; border-radius: 0;
 }
@@ -728,4 +748,166 @@
 .composer-atts {
   display: flex; gap: 8px; flex-wrap: wrap;
   padding: 10px 10px 0;
+}
+
+/* Developer API — revoke button turns accent on hover */
+.revoke-btn:hover {
+  color: var(--t-accent);
+  border-color: var(--t-accent);
+}
+
+/* Developer API page — two-column account/reference layout, collapses on narrow screens */
+.dev-api-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+  align-items: start;
+}
+@media (max-width: 880px) {
+  .dev-api-grid { grid-template-columns: 1fr; }
+}
+
+/* ─── code block: cap to 760px only on screens wide enough to handle it ── */
+@media (min-width: 820px) {
+  .cb {
+    max-width: 760px;
+  }
+}
+
+/* ─── touch devices: always show hover-only actions ─────────────────── */
+@media (hover: none) {
+  /* Touch: message actions are hidden until the message is tapped (see
+     .msg-row.active below) — not always-on, which felt cluttered. */
+  .att-x {
+    opacity: 1;
+  }
+}
+
+/* ─── mobile sidebar overlay drawer ─────────────────────────────────── */
+.term-mobile-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 49;
+  background: rgba(0, 0, 0, 0.55);
+  animation: termBackdropIn 0.3s ease both;
+}
+@keyframes termBackdropIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+.term-mobile-drawer {
+  position: fixed;
+  top: 0;
+  left: 0;  /* full-height overlay from the left edge (rail is hidden from grid) */
+  bottom: 0;
+  z-index: 50;
+  width: min(316px, 90vw);  /* 58px rail + 256px sidebar */
+  background: var(--t-bg-2);
+  border-right: 1px solid var(--t-border);
+  display: flex;
+  flex-direction: row;  /* [icon rail][conversation sidebar] */
+  overflow: hidden;
+  transform: translateX(-100%);
+  transition: transform 0.45s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.term-mobile-drawer.open {
+  transform: translateX(0);
+}
+/* Icon rail + sidebar inside the mobile drawer. */
+.term-drawer-rail {
+  width: 58px;
+  flex: none;
+  height: 100%;
+}
+.term-drawer-side {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+/* ─── files panel: hidden by default below 900px ────────────────────── */
+@media (max-width: 899px) {
+  .files-panel {
+    display: none;
+  }
+}
+
+/* ─── responsive dashboard: tablet (768–1023px) ──────────────────────
+   The grid already adapts via JS (isMobile path in layout.tsx).
+   These extra rules handle spacing/layout within the main content area. */
+@media (max-width: 1023px) {
+  .term-thread {
+    padding: 14px 4px 28px;
+  }
+}
+
+/* ─── responsive dashboard: phone (<768px) ──────────────────────────── */
+@media (max-width: 767px) {
+  /* Topbar: tighter padding on small screens */
+  .term-topbar {
+    padding: 0 10px;
+    gap: 6px;
+  }
+  /* Path label: truncate so it doesn't overflow */
+  .term-topbar .path {
+    max-width: 140px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  /* Composer: tighter padding */
+  .term-composer {
+    padding: 10px 12px 14px;
+  }
+  /* Selectors bar: allow wrapping and keep row flush to edges */
+  .term-thread {
+    padding: 10px 2px 24px;
+  }
+  /* Message actions: wider tap target alignment */
+  .msg-row {
+    padding-right: 40px;
+  }
+  .msg-actions {
+    right: 4px;
+  }
+  /* Starter chips: long ones are `white-space: nowrap` and overflow the screen.
+     Let them wrap their text and never exceed the available width. */
+  .term-chip {
+    white-space: normal;
+    max-width: 100%;
+    text-align: left;
+  }
+  /* Tables: hide secondary columns (model / status / last-used) and tighten so
+     the key columns fit the phone width without a horizontal scrollbar. */
+  .term-table .hide-sm { display: none; }
+  .term-table { font-size: 11px; }
+  .term-table th { padding: 8px 9px; }
+  .term-table td { padding: 9px 9px; }
+  /* Truncate the key preview so the name column gets the breathing room. */
+  .term-table .col-key {
+    max-width: 84px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  /* Composer: fit model + agent + team + attach on one line. The row gap and
+     the trigger padding are inline styles, so override with !important. Cap the
+     model label so a long name truncates instead of wrapping the row. */
+  .composer-ctrls { gap: 6px !important; }
+  .composer-ctrls .term-input { padding: 6px 8px !important; }
+  .cs-label { max-width: 92px; }
+}
+
+/* ─── small phones (360–414px) ───────────────────────────────────────── */
+@media (max-width: 414px) {
+  .term-topbar .path {
+    max-width: 100px;
+  }
+  /* Icon rail: slightly tighter items */
+  .term-rail-item {
+    width: 36px;
+    height: 36px;
+  }
 }

@@ -32,26 +32,31 @@ export default function Manifesto() {
     () => {
       const el = wrap.current;
       if (!el) return;
-      const lineInners = gsap.utils.toArray<HTMLElement>(".idea-line > span", el);
-      const glyph = el.querySelector<SVGTextElement>(".idea-glyph");
+      // Pinned scrub is desktop-only. On phones we never hide the lines or the
+      // glyph (no gsap.set), so the manifesto reads as a plain static block.
+      const mm = gsap.matchMedia();
+      mm.add("(min-width: 768px)", () => {
+        const lineInners = gsap.utils.toArray<HTMLElement>(".idea-line > span", el);
+        const glyph = el.querySelector<SVGTextElement>(".idea-glyph");
 
-      gsap.set(lineInners, { yPercent: 118 });
-      if (glyph) gsap.set(glyph, { strokeDasharray: DASH, strokeDashoffset: DASH });
+        gsap.set(lineInners, { yPercent: 118 });
+        if (glyph) gsap.set(glyph, { strokeDasharray: DASH, strokeDashoffset: DASH });
 
-      const tl = gsap.timeline({
-        scrollTrigger: { trigger: el, start: "top top", end: "+=340%", pin: true, scrub: 0.7 },
+        const tl = gsap.timeline({
+          scrollTrigger: { trigger: el, start: "top top", end: "+=340%", pin: true, scrub: 0.7 },
+        });
+
+        // æ starts drawing a little later, then draws across the rest of the sequence.
+        if (glyph) tl.to(glyph, { strokeDashoffset: 0, ease: "none", duration: LINES.length }, 0.7);
+
+        // a sentence reveals roughly once per unit of scroll.
+        lineInners.forEach((ln, i) => {
+          tl.to(ln, { yPercent: 0, ease: "power3.out", duration: 1 }, 0.5 + i);
+        });
+
+        // soft fill settles into the æ near the end.
+        if (glyph) tl.to(glyph, { fillOpacity: 0.05, ease: "none", duration: 1.5 }, ">-1.5");
       });
-
-      // æ starts drawing a little later, then draws across the rest of the sequence.
-      if (glyph) tl.to(glyph, { strokeDashoffset: 0, ease: "none", duration: LINES.length }, 0.7);
-
-      // a sentence reveals roughly once per unit of scroll.
-      lineInners.forEach((ln, i) => {
-        tl.to(ln, { yPercent: 0, ease: "power3.out", duration: 1 }, 0.5 + i);
-      });
-
-      // soft fill settles into the æ near the end.
-      if (glyph) tl.to(glyph, { fillOpacity: 0.05, ease: "none", duration: 1.5 }, ">-1.5");
     },
     { scope: wrap }
   );
