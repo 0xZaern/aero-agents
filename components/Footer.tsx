@@ -18,6 +18,7 @@ const GROUPS = [
     title: "Company",
     links: [
       { label: "Docs", href: "/docs" },
+      { label: "Developer API", href: "/docs#api" },
       { label: "Terms", href: "/terms" },
       { label: "Privacy", href: "/privacy" },
     ],

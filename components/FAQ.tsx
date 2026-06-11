@@ -1,12 +1,17 @@
 "use client";
 
-import { useState } from "react";
+import { ReactNode, useState } from "react";
 import RevealText from "./RevealText";
 import Reveal from "./Reveal";
 import { useCursorHover } from "@/lib/cursor";
 import { MODEL_COUNT, PROVIDER_COUNT } from "@/lib/models";
 
-const ITEMS = [
+interface FaqItem {
+  q: string;
+  a: ReactNode;
+}
+
+const ITEMS: FaqItem[] = [
   {
     q: "Which models can I use?",
     a: `${MODEL_COUNT} frontier models across ${PROVIDER_COUNT} providers: Claude, GPT, Gemini, DeepSeek, Llama, Grok, Qwen, Kimi, MiniMax, GLM and Mistral. Switch between any of them mid-conversation.`,
@@ -27,9 +32,23 @@ const ITEMS = [
     q: "How do I pay?",
     a: "Sign in with your wallet and pay with USDC on Base. No credit cards, no middlemen. New accounts get $1 in starting credits.",
   },
+  {
+    q: "Can I use aero from my own app?",
+    a: (
+      <>
+        Yes - aero has a public developer API. Mint a key in the dashboard and call the same models and agents over HTTP, billed from a separate VVV-topped-up credit wallet.{" "}
+        <a
+          href="/docs#api"
+          style={{ color: "var(--text)", textDecoration: "underline", textUnderlineOffset: "3px" }}
+        >
+          Read the full API docs.
+        </a>
+      </>
+    ),
+  },
 ];
 
-function Row({ item, open, onToggle }: { item: (typeof ITEMS)[number]; open: boolean; onToggle: () => void }) {
+function Row({ item, open, onToggle }: { item: FaqItem; open: boolean; onToggle: () => void }) {
   const hover = useCursorHover();
   return (
     <div className={`faq-row ${open ? "open" : ""}`}>

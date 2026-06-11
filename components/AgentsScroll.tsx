@@ -25,6 +25,7 @@ const AGENTS = [
   { name: "Project Analyzer", role: "Forensic audit of any crypto project URL. Honest legitimacy verdict, no hype." },
   { name: "Docs Agent", role: "Audits documentation for clarity, gaps and accuracy. Tells you what to fix." },
   { name: "GitHub Analyzer", role: "Paste any public repo. Returns a developer-level audit of code quality and red flags." },
+  { name: "Wallet Analyzer", role: "Paste any Ethereum or Base wallet address. Scans approvals, flags risky contracts, and scores overall risk." },
   { name: "YouTube Agent", role: "Turns any video into tight, skimmable key points. No fluff." },
   { name: "Caveman Agent", role: "Strips every filler word. Dense, terse answers, code blocks stay clean." },
 ];
