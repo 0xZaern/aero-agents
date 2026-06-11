@@ -38,7 +38,7 @@ function detectFilename(code: string): { name: string; body: string } | null {
 export default function CodeBlock({ lang, code, name: fenceName, plain = false }: { lang: string; code: string; name?: string; plain?: boolean }) {
   // Filename precedence: the fence (```py app.py) wins; otherwise fall back to a
   // first-line comment in the body. Only strip the body when the name came from
-  // that comment — a fence name leaves the file contents untouched.
+  // that comment - a fence name leaves the file contents untouched.
   const detected = fenceName ? null : detectFilename(code);
   const name = fenceName ?? detected?.name ?? null;
   const body = (detected?.body ?? code).replace(/\n+$/, "");
@@ -46,7 +46,7 @@ export default function CodeBlock({ lang, code, name: fenceName, plain = false }
   const [copied, setCopied] = useState(false);
 
   useEffect(() => {
-    // While streaming we render plain text and skip shiki entirely — avoids
+    // While streaming we render plain text and skip shiki entirely - avoids
     // re-highlighting on every token (slow + flickery). The finalized message
     // re-mounts with plain=false and gets full highlighting.
     if (plain) return;

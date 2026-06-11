@@ -15,7 +15,7 @@ import { useChatStore } from './chatStore';
 // Persistent unread tracking - per-task last-seen successful run id.
 // When the latest successful run id differs from the saved one, the row
 // shows an unread dot until the user opens that task's conversation.
-const LAST_SEEN_KEY = 'conductor:scheduledTasks:lastSeen';
+const LAST_SEEN_KEY = 'aero:scheduledTasks:lastSeen';
 
 function loadLastSeen(): Record<string, string> {
   if (typeof window === 'undefined') return {};

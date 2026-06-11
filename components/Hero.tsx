@@ -28,7 +28,7 @@ export default function Hero() {
       if (!sec.current || !content.current) return;
       // Pinned flythrough is desktop-only. On phones the dynamic URL bar fights
       // the pin (the page jumps), so below 768px the hero is a plain static
-      // section — the title still reveals via the CSS `.in` class.
+      // section - the title still reveals via the CSS `.in` class.
       const mm = gsap.matchMedia();
       mm.add("(min-width: 768px)", () => {
         gsap.to(content.current, {

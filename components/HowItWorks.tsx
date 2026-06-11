@@ -102,7 +102,7 @@ export default function HowItWorks() {
     () => {
       const el = wrap.current, st = stage.current;
       if (!el || !st) return;
-      // The entire 2x2 camera-pan choreography is desktop-only — its layout is
+      // The entire 2x2 camera-pan choreography is desktop-only - its layout is
       // built from GSAP transforms (a 200vw stage), which is meaningless on a
       // phone. Below 768px we skip it all and the steps render as a static
       // vertical stack (see the `.how` mobile CSS).

@@ -12,7 +12,7 @@ import type {
 } from './types';
 
 // Call the backend DIRECTLY when NEXT_PUBLIC_API_URL is set (e.g. the Railway
-// URL) — same origin the WebSocket uses. This skips the Vercel rewrite proxy
+// URL) - same origin the WebSocket uses. This skips the Vercel rewrite proxy
 // hop that otherwise sits on every REST request (browser → Vercel → Railway).
 // When unset (local dev), fall back to a relative base so next.config rewrites
 // proxy /api/* to localhost:8000.
@@ -378,7 +378,7 @@ export interface ApiKey {
 
 export interface ApiKeyCreated {
   id: string;
-  key: string;        // raw sk_aero_... — shown ONCE
+  key: string;        // raw sk_aero_... - shown ONCE
   prefix: string;
   label: string;
   createdAt: string;

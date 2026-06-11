@@ -541,7 +541,7 @@ summary {
 }
 
 @media (max-width: 760px) {
-  /* Links are display:none below, which drops them out of the grid entirely —
+  /* Links are display:none below, which drops them out of the grid entirely -
      that would auto-place .aero-nav-right into the middle column. Collapse to
      two columns so the hamburger lands flush against the right edge. */
   .aero-nav-inner {
@@ -2261,19 +2261,19 @@ summary {
 }
 
 /* ════════════════════════════════════════════════════════════════════════
-   MOBILE STATIC FALLBACKS (<= 767px)  — placed last so these win the cascade.
+   MOBILE STATIC FALLBACKS (<= 767px)  - placed last so these win the cascade.
    The pinned / scroll-driven sections (hero flythrough, manifesto scrub,
    how-it-works camera pan, agents horizontal scroll, models scroll-lock) are
    gated to desktop in JS via gsap.matchMedia("(min-width: 768px)"). Below that
    the GSAP never runs, so each section stands on its own as a plain block.
    ════════════════════════════════════════════════════════════════════════ */
 @media (max-width: 767px) {
-  /* HERO — fit the visible viewport (svh) so the title isn't pushed off. */
+  /* HERO - fit the visible viewport (svh) so the title isn't pushed off. */
   .hero {
     min-height: 100svh;
   }
 
-  /* HOW IT WORKS — replace the 200vw 2x2 camera stage with a stacked list. */
+  /* HOW IT WORKS - replace the 200vw 2x2 camera stage with a stacked list. */
   .how {
     height: auto;
     min-height: 0;
@@ -2319,7 +2319,7 @@ summary {
     display: none; /* the border-tracer geometry is desktop-only */
   }
 
-  /* AGENTS — keep the cards in a horizontal row, but make it a finger-swipe
+  /* AGENTS - keep the cards in a horizontal row, but make it a finger-swipe
      carousel (native scroll + snap) instead of the desktop pinned auto-scroll.
      Cards are sized so the next one peeks, signalling there's more to swipe. */
   .agents-scroll {

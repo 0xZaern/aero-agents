@@ -57,7 +57,7 @@ export const useAuthStore = create<AuthState>()(
       },
     }),
     {
-      name: 'conductor-auth',
+      name: 'aero-auth',
       partialize: (state) => ({
         token: state.token,
         user: state.user,

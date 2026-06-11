@@ -19,7 +19,7 @@ interface Method {
 }
 
 // WalletConnect Cloud project id. These ids are PUBLIC (they ship in the client
-// bundle), so the default below is safe to commit — it's reused from the AGORA
+// bundle), so the default below is safe to commit - it's reused from the AGORA
 // project's Reown account. Override per-environment with
 // NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID, or make a dedicated one at cloud.reown.com.
 // NOTE: if the Reown project restricts allowed domains, add aero's domains there.
