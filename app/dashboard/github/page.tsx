@@ -1,6 +1,8 @@
 'use client';
 
-import AnalyzerPage, { type AnalyzerCtx } from '@/components/dash/analyzers/AnalyzerPage';
+import { Suspense } from 'react';
+import { useSearchParams } from 'next/navigation';
+import AnalyzerPage, { type AnalyzerCtx, type HydrationMapper } from '@/components/dash/analyzers/AnalyzerPage';
 import SlopScore from '@/components/dash/analyzers/SlopScore';
 import { AsciiBar } from '@/components/dash/analyzers/AnalyzerShell';
 import {
@@ -31,21 +33,21 @@ const HINTS = [
 function ScoreBar({ score, label }: { score: number; label?: string }) {
   return (
     <div style={{ display: 'flex', alignItems: 'center', gap: 10, fontSize: 12 }}>
-      {label && <span style={{ color: 'var(--text-dim)', minWidth: 120 }}>{label}</span>}
+      {label && <span style={{ color: 'var(--t-dim)', fontFamily: 'var(--font-m)', minWidth: 120 }}>{label}</span>}
       <AsciiBar value={score} />
-      <span style={{ color: 'var(--text-muted)', minWidth: 38, textAlign: 'right' }}>{score}/100</span>
+      <span style={{ color: 'var(--t-text)', fontFamily: 'var(--font-m)', minWidth: 38, textAlign: 'right' }}>{score}/100</span>
     </div>
   );
 }
 
 function BulletList({ items, prefix = '·' }: { items: string[]; prefix?: string }) {
-  if (items.length === 0) return <span style={{ color: 'var(--text-dim)', fontSize: 12 }}>none</span>;
+  if (items.length === 0) return <span style={{ color: 'var(--t-dim)', fontFamily: 'var(--font-m)', fontSize: 12 }}>none</span>;
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
       {items.map((item, i) => (
-        <div key={i} style={{ fontSize: 12, color: 'var(--text-muted)', display: 'flex', gap: 7 }}>
-          <span style={{ color: 'var(--text-dim)' }}>{prefix}</span>
-          <span>{item}</span>
+        <div key={i} style={{ fontSize: 12, color: 'var(--t-muted)', fontFamily: 'var(--font-s)', display: 'flex', gap: 7, alignItems: 'flex-start' }}>
+          <span style={{ color: 'var(--t-dim)', fontFamily: 'var(--font-m)', flexShrink: 0, lineHeight: 1.55 }}>{prefix}</span>
+          <span style={{ lineHeight: 1.55 }}>{item}</span>
         </div>
       ))}
     </div>
@@ -70,18 +72,19 @@ function GitHubReportView({ report, repoUrl }: { report: GitHubReport; repoUrl: 
         </div>
         <div style={{ padding: '12px 14px', display: 'flex', flexDirection: 'column', gap: 8 }}>
           <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', fontSize: 12 }}>
-            <span style={{ color: 'var(--text-dim)' }}>repo</span>
-            <a href={repoUrl} target="_blank" rel="noopener noreferrer" style={{ color: 'var(--text-muted)', fontFamily: 'var(--font-mono)', fontSize: 11, wordBreak: 'break-all' }}>
+            <span style={{ color: 'var(--t-dim)', fontFamily: 'var(--font-m)' }}>repo</span>
+            <a href={repoUrl} target="_blank" rel="noopener noreferrer" style={{ color: 'var(--t-muted)', fontFamily: 'var(--font-m)', fontSize: 11, wordBreak: 'break-all' }}>
               {repoUrl.replace(/^https?:\/\//, '')}
             </a>
           </div>
           <div style={{ display: 'flex', gap: 10, fontSize: 12 }}>
-            <span style={{ color: 'var(--text-dim)' }}>confidence</span>
+            <span style={{ color: 'var(--t-dim)', fontFamily: 'var(--font-m)' }}>confidence</span>
             <span className={`pill ${report.confidence === 'high' ? 'success' : report.confidence === 'medium' ? 'running' : 'paused'}`}>
               {report.confidence}
             </span>
           </div>
-          <div style={{ marginTop: 4, fontSize: 12, color: 'var(--text-muted)', lineHeight: 1.6 }}>{report.what_it_is}</div>
+          {/* what_it_is: primary description, white 13px sans */}
+          <div style={{ marginTop: 4, fontSize: 13, color: 'var(--t-text)', fontFamily: 'var(--font-s)', lineHeight: 1.65 }}>{report.what_it_is}</div>
         </div>
       </div>
 
@@ -92,17 +95,17 @@ function GitHubReportView({ report, repoUrl }: { report: GitHubReport; repoUrl: 
           <ScoreBar score={report.code_quality.score} label="quality score" />
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
             <div>
-              <div style={{ color: 'var(--text-dim)', fontSize: 10, letterSpacing: '0.12em', textTransform: 'uppercase', marginBottom: 6 }}>strengths</div>
+              <div style={{ color: 'var(--t-dim)', fontFamily: 'var(--font-m)', fontSize: 11, letterSpacing: '0.13em', textTransform: 'uppercase', marginBottom: 6 }}>strengths</div>
               <BulletList items={report.code_quality.strengths} prefix="+" />
             </div>
             <div>
-              <div style={{ color: 'var(--text-dim)', fontSize: 10, letterSpacing: '0.12em', textTransform: 'uppercase', marginBottom: 6 }}>weaknesses</div>
+              <div style={{ color: 'var(--t-dim)', fontFamily: 'var(--font-m)', fontSize: 11, letterSpacing: '0.13em', textTransform: 'uppercase', marginBottom: 6 }}>weaknesses</div>
               <BulletList items={report.code_quality.weaknesses} prefix="-" />
             </div>
           </div>
           {report.code_quality.illogical_places.length > 0 && (
             <div>
-              <div style={{ color: 'var(--text-dim)', fontSize: 10, letterSpacing: '0.12em', textTransform: 'uppercase', marginBottom: 6 }}>illogical places</div>
+              <div style={{ color: 'var(--t-dim)', fontFamily: 'var(--font-m)', fontSize: 11, letterSpacing: '0.13em', textTransform: 'uppercase', marginBottom: 6 }}>illogical places</div>
               <BulletList items={report.code_quality.illogical_places} prefix="?" />
             </div>
           )}
@@ -123,18 +126,18 @@ function GitHubReportView({ report, repoUrl }: { report: GitHubReport; repoUrl: 
         <div className="term-panel-head">security</div>
         <div style={{ padding: '14px 14px', display: 'flex', flexDirection: 'column', gap: 12 }}>
           {report.security.red_flags.length === 0 && report.security.missing.length === 0 ? (
-            <div style={{ fontSize: 12, color: 'var(--text-dim)' }}>no security red flags</div>
+            <div style={{ fontSize: 12, color: 'var(--t-dim)', fontFamily: 'var(--font-m)' }}>no security red flags</div>
           ) : (
             <>
               {report.security.red_flags.length > 0 && (
                 <div>
-                  <div style={{ color: 'var(--text-dim)', fontSize: 10, letterSpacing: '0.12em', textTransform: 'uppercase', marginBottom: 6 }}>red flags</div>
+                  <div style={{ color: 'var(--t-dim)', fontFamily: 'var(--font-m)', fontSize: 11, letterSpacing: '0.13em', textTransform: 'uppercase', marginBottom: 6 }}>red flags</div>
                   <BulletList items={report.security.red_flags} prefix="!" />
                 </div>
               )}
               {report.security.missing.length > 0 && (
                 <div>
-                  <div style={{ color: 'var(--text-dim)', fontSize: 10, letterSpacing: '0.12em', textTransform: 'uppercase', marginBottom: 6 }}>missing</div>
+                  <div style={{ color: 'var(--t-dim)', fontFamily: 'var(--font-m)', fontSize: 11, letterSpacing: '0.13em', textTransform: 'uppercase', marginBottom: 6 }}>missing</div>
                   <BulletList items={report.security.missing} prefix="?" />
                 </div>
               )}
@@ -153,8 +156,15 @@ function GitHubReportView({ report, repoUrl }: { report: GitHubReport; repoUrl: 
         </div>
         <div style={{ padding: '12px 14px', display: 'flex', flexDirection: 'column', gap: 8 }}>
           <div style={{ display: 'flex', gap: 24, flexWrap: 'wrap', fontSize: 12 }}>
-            <span style={{ color: 'var(--text-dim)' }}>last commit <span style={{ color: 'var(--text-muted)' }}>{report.activity.last_commit_days_ago}d ago</span></span>
-            <span style={{ color: 'var(--text-dim)' }}>bus factor <span style={{ color: 'var(--text-muted)' }}>{report.activity.bus_factor}</span></span>
+            {/* label: dim mono; value: white */}
+            <span style={{ color: 'var(--t-dim)', fontFamily: 'var(--font-m)' }}>
+              last commit{' '}
+              <span style={{ color: 'var(--t-text)' }}>{report.activity.last_commit_days_ago}d ago</span>
+            </span>
+            <span style={{ color: 'var(--t-dim)', fontFamily: 'var(--font-m)' }}>
+              bus factor{' '}
+              <span style={{ color: 'var(--t-text)' }}>{report.activity.bus_factor}</span>
+            </span>
           </div>
           {report.activity.notes.length > 0 && <BulletList items={report.activity.notes} />}
         </div>
@@ -163,7 +173,7 @@ function GitHubReportView({ report, repoUrl }: { report: GitHubReport; repoUrl: 
       {/* bottom line */}
       <div className="term-panel">
         <div className="term-panel-head">bottom line</div>
-        <div style={{ padding: '12px 14px', fontSize: 13, color: 'var(--text)', lineHeight: 1.7 }}>{report.bottom_line}</div>
+        <div style={{ padding: '12px 14px', fontSize: 13, color: 'var(--t-text)', fontFamily: 'var(--font-s)', lineHeight: 1.7 }}>{report.bottom_line}</div>
       </div>
 
       {/* verify yourself */}
@@ -180,7 +190,7 @@ function GitHubReportView({ report, repoUrl }: { report: GitHubReport; repoUrl: 
                     <tr key={i}>
                       <td>{link.label}</td>
                       <td>
-                        <a href={href} target="_blank" rel="noopener noreferrer" style={{ color: 'var(--text-muted)', fontSize: 11, wordBreak: 'break-all' }}>
+                        <a href={href} target="_blank" rel="noopener noreferrer" style={{ color: 'var(--t-muted)', fontFamily: 'var(--font-m)', fontSize: 11, wordBreak: 'break-all' }}>
                           {link.url.replace(/^https?:\/\//, '')}
                         </a>
                       </td>
@@ -195,7 +205,7 @@ function GitHubReportView({ report, repoUrl }: { report: GitHubReport; repoUrl: 
 
       {/* data gaps */}
       {report.data_gaps.length > 0 && (
-        <div style={{ fontSize: 11, color: 'var(--text-dim)', padding: '0 2px' }}>
+        <div style={{ fontSize: 11, color: 'var(--t-dim)', fontFamily: 'var(--font-m)', padding: '0 2px' }}>
           data gaps: {report.data_gaps.join(', ')} - analysis may be partial
         </div>
       )}
@@ -203,7 +213,21 @@ function GitHubReportView({ report, repoUrl }: { report: GitHubReport; repoUrl: 
   );
 }
 
-export default function GitHubPage() {
+const GITHUB_HYDRATION_MAPPER: HydrationMapper<GitHubReport> = {
+  extractReport: (payload) => {
+    if (payload.__type__ !== '__github_agent_report__') return null;
+    const r = payload.report;
+    if (!r || typeof r !== 'object') return null;
+    return r as GitHubReport;
+  },
+  extractTarget: (payload) => (typeof payload.repo_url === 'string' ? payload.repo_url : ''),
+  extractEvidence: (payload) => payload.evidence ?? null,
+};
+
+function GitHubPageInner() {
+  const searchParams = useSearchParams();
+  const hydrationCid = searchParams.get('cid');
+
   return (
     <AnalyzerPage<GitHubReport>
       category="github"
@@ -215,9 +239,19 @@ export default function GitHubPage() {
       progressTitle="scan in progress"
       failTitle="scan failed"
       hints={HINTS}
+      hydrationCid={hydrationCid}
+      hydrationMapper={GITHUB_HYDRATION_MAPPER}
       analyze={(url, model) => githubAnalyze(url, model || undefined)}
       getJob={(id) => githubGetJob(id)}
       renderReport={(report, ctx: AnalyzerCtx) => <GitHubReportView report={report} repoUrl={ctx.submittedUrl} />}
     />
+  );
+}
+
+export default function GitHubPage() {
+  return (
+    <Suspense>
+      <GitHubPageInner />
+    </Suspense>
   );
 }

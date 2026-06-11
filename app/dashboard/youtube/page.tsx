@@ -1,6 +1,8 @@
 'use client';
 
-import AnalyzerPage, { type AnalyzerCtx, type JobResult } from '@/components/dash/analyzers/AnalyzerPage';
+import { Suspense } from 'react';
+import { useSearchParams } from 'next/navigation';
+import AnalyzerPage, { type AnalyzerCtx, type JobResult, type HydrationMapper } from '@/components/dash/analyzers/AnalyzerPage';
 import {
   youtubeAnalyze,
   youtubeGetJob,
@@ -50,34 +52,48 @@ function YouTubeReportView({ report, evidence }: { report: YouTubeReport; eviden
           video
           <span style={{ marginLeft: 'auto' }}><span className="pill active">{report.content_type}</span></span>
         </div>
-        <div style={{ padding: '12px 14px', display: 'flex', flexDirection: 'column', gap: 6 }}>
-          <div style={{ fontSize: 13, color: 'var(--text)', fontWeight: 500, lineHeight: 1.4 }}>{video.title}</div>
-          <div style={{ fontSize: 12, color: 'var(--text-dim)' }}>{video.channel}</div>
-          <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap', marginTop: 4 }}>
-            <span style={{ fontSize: 11, color: 'var(--text-dim)' }}>duration <span style={{ color: 'var(--text-muted)' }}>{fmt(video.duration_seconds)}</span></span>
-            <span style={{ fontSize: 11, color: 'var(--text-dim)' }}>
+        <div style={{ padding: '12px 14px', display: 'flex', flexDirection: 'column', gap: 5 }}>
+          {/* title: most prominent element in this panel */}
+          <div style={{ fontSize: 14, color: 'var(--t-text)', fontWeight: 600, lineHeight: 1.4, fontFamily: 'var(--font-s)' }}>{video.title}</div>
+          {/* channel name */}
+          <div style={{ fontSize: 12, color: 'var(--t-muted)', fontFamily: 'var(--font-m)' }}>{video.channel}</div>
+          {/* what_it_is_about: one-line grey description under channel */}
+          {report.what_it_is_about && (
+            <div style={{ fontSize: 12, color: 'var(--t-muted)', fontFamily: 'var(--font-s)', lineHeight: 1.5 }}>{report.what_it_is_about}</div>
+          )}
+          {/* meta row: duration, transcript source, language, elapsed */}
+          <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap', marginTop: 3 }}>
+            <span style={{ fontSize: 11, color: 'var(--t-dim)', fontFamily: 'var(--font-m)' }}>
+              duration <span style={{ color: 'var(--t-accent)' }}>{fmt(video.duration_seconds)}</span>
+            </span>
+            <span style={{ fontSize: 11, color: 'var(--t-dim)', fontFamily: 'var(--font-m)' }}>
               transcript{' '}
               <span className={`pill ${evidence.transcript_source === 'manual_captions' ? 'active' : 'paused'}`}>
                 {evidence.transcript_source === 'manual_captions' ? 'manual' : 'auto'}
               </span>
             </span>
-            {evidence.language && <span style={{ fontSize: 11, color: 'var(--text-dim)' }}>lang <span style={{ color: 'var(--text-muted)' }}>{evidence.language}</span></span>}
+            {evidence.language && (
+              <span style={{ fontSize: 11, color: 'var(--t-dim)', fontFamily: 'var(--font-m)' }}>
+                lang <span style={{ color: 'var(--t-muted)' }}>{evidence.language}</span>
+              </span>
+            )}
             {evidence.pipeline_elapsed_seconds > 0 && (
-              <span style={{ fontSize: 11, color: 'var(--text-dim)' }}>analyzed in <span style={{ color: 'var(--text-muted)' }}>{evidence.pipeline_elapsed_seconds.toFixed(1)}s</span></span>
+              <span style={{ fontSize: 11, color: 'var(--t-dim)', fontFamily: 'var(--font-m)' }}>
+                analyzed in <span style={{ color: 'var(--t-muted)' }}>{evidence.pipeline_elapsed_seconds.toFixed(1)}s</span>
+              </span>
             )}
           </div>
-          <div style={{ marginTop: 4 }}>
-            <a href={video.url} target="_blank" rel="noopener noreferrer" style={{ fontSize: 11, color: 'var(--text-muted)', fontFamily: 'var(--font-mono)' }}>{video.url}</a>
+          <div style={{ marginTop: 2 }}>
+            <a href={video.url} target="_blank" rel="noopener noreferrer" style={{ fontSize: 11, color: 'var(--t-dim)', fontFamily: 'var(--font-m)' }}>{video.url}</a>
           </div>
         </div>
       </div>
 
-      {/* tl;dr */}
+      {/* tl;dr -- shows only report.tldr; what_it_is_about is in the video panel above */}
       <div className="term-panel">
         <div className="term-panel-head">tl;dr</div>
-        <div style={{ padding: '12px 14px', display: 'flex', flexDirection: 'column', gap: 8 }}>
-          <div style={{ fontSize: 12, color: 'var(--text-muted)', lineHeight: 1.65 }}>{report.what_it_is_about}</div>
-          <div style={{ fontSize: 13, color: 'var(--text)', lineHeight: 1.65, fontWeight: 500 }}>{report.tldr}</div>
+        <div style={{ padding: '12px 14px' }}>
+          <div style={{ fontSize: 13, color: 'var(--t-text)', lineHeight: 1.7, fontFamily: 'var(--font-s)' }}>{report.tldr}</div>
         </div>
       </div>
 
@@ -87,19 +103,37 @@ function YouTubeReportView({ report, evidence }: { report: YouTubeReport; eviden
           <div className="term-panel-head">key points</div>
           <div style={{ padding: '4px 0' }}>
             <table className="term-table">
-              <thead><tr><th>#</th><th>point</th><th>why it matters</th><th>at</th></tr></thead>
+              <thead>
+                <tr>
+                  <th style={{ width: 28 }}>#</th>
+                  <th>point</th>
+                  <th>why it matters</th>
+                  <th style={{ width: 60 }}>at</th>
+                </tr>
+              </thead>
               <tbody>
                 {report.key_points.map((kp, i) => (
                   <tr key={i}>
-                    <td style={{ color: 'var(--text-dim)', width: 28 }}>{i + 1}</td>
-                    <td>{kp.point}</td>
-                    <td style={{ color: 'var(--text-dim)', fontSize: 11 }}>{kp.why_matters}</td>
+                    {/* row number: dim mono */}
+                    <td style={{ color: 'var(--t-dim)', fontFamily: 'var(--font-m)', fontSize: 11, width: 28 }}>{i + 1}</td>
+                    {/* point text: primary prose */}
+                    <td style={{ color: 'var(--t-text)', fontSize: 13, fontFamily: 'var(--font-s)', lineHeight: 1.55 }}>{kp.point}</td>
+                    {/* why it matters: secondary, slightly smaller */}
+                    <td style={{ color: 'var(--t-muted)', fontSize: 12, fontFamily: 'var(--font-s)', lineHeight: 1.5 }}>{kp.why_matters}</td>
+                    {/* timestamp: accent mono anchor */}
                     <td style={{ whiteSpace: 'nowrap', width: 60 }}>
                       {kp.timestamp_seconds != null ? (
-                        <a href={`https://youtu.be/${videoId}?t=${kp.timestamp_seconds}`} target="_blank" rel="noopener noreferrer" style={{ color: 'var(--text-muted)', fontFamily: 'var(--font-mono)', fontSize: 11 }}>
+                        <a
+                          href={`https://youtu.be/${videoId}?t=${kp.timestamp_seconds}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          style={{ color: 'var(--t-accent)', fontFamily: 'var(--font-m)', fontSize: 11 }}
+                        >
                           {fmt(kp.timestamp_seconds)}
                         </a>
-                      ) : '-'}
+                      ) : (
+                        <span style={{ color: 'var(--t-dim)', fontFamily: 'var(--font-m)', fontSize: 11 }}>-</span>
+                      )}
                     </td>
                   </tr>
                 ))}
@@ -113,10 +147,12 @@ function YouTubeReportView({ report, evidence }: { report: YouTubeReport; eviden
       {report.causes_or_background.length > 0 && (
         <div className="term-panel">
           <div className="term-panel-head">causes and background</div>
-          <div style={{ padding: '12px 14px', display: 'flex', flexDirection: 'column', gap: 4 }}>
+          <div style={{ padding: '12px 14px', display: 'flex', flexDirection: 'column', gap: 6 }}>
             {report.causes_or_background.map((item, i) => (
-              <div key={i} style={{ fontSize: 12, color: 'var(--text-muted)', display: 'flex', gap: 8 }}>
-                <span style={{ color: 'var(--text-dim)' }}>·</span><span>{item}</span>
+              <div key={i} style={{ display: 'flex', gap: 10, alignItems: 'flex-start' }}>
+                {/* bullet: dim mono */}
+                <span style={{ color: 'var(--t-dim)', fontFamily: 'var(--font-m)', fontSize: 12, lineHeight: 1.55, flexShrink: 0 }}>·</span>
+                <span style={{ fontSize: 13, color: 'var(--t-muted)', fontFamily: 'var(--font-s)', lineHeight: 1.55 }}>{item}</span>
               </div>
             ))}
           </div>
@@ -127,11 +163,14 @@ function YouTubeReportView({ report, evidence }: { report: YouTubeReport; eviden
       {report.solutions_or_takeaways.length > 0 && (
         <div className="term-panel">
           <div className="term-panel-head">{report.content_type === 'tutorial' ? 'steps' : 'takeaways'}</div>
-          <div style={{ padding: '12px 14px', display: 'flex', flexDirection: 'column', gap: 4 }}>
+          <div style={{ padding: '12px 14px', display: 'flex', flexDirection: 'column', gap: 6 }}>
             {report.solutions_or_takeaways.map((item, i) => (
-              <div key={i} style={{ fontSize: 12, color: 'var(--text-muted)', display: 'flex', gap: 8 }}>
-                <span style={{ color: 'var(--text-dim)', minWidth: 20 }}>{report.content_type === 'tutorial' ? `${i + 1}.` : '·'}</span>
-                <span>{item}</span>
+              <div key={i} style={{ display: 'flex', gap: 10, alignItems: 'flex-start' }}>
+                {/* number/bullet: dim mono */}
+                <span style={{ color: 'var(--t-dim)', fontFamily: 'var(--font-m)', fontSize: 12, lineHeight: 1.55, flexShrink: 0, minWidth: 18 }}>
+                  {report.content_type === 'tutorial' ? `${i + 1}.` : '·'}
+                </span>
+                <span style={{ fontSize: 13, color: 'var(--t-muted)', fontFamily: 'var(--font-s)', lineHeight: 1.55 }}>{item}</span>
               </div>
             ))}
           </div>
@@ -144,16 +183,28 @@ function YouTubeReportView({ report, evidence }: { report: YouTubeReport; eviden
           <div className="term-panel-head">chapters</div>
           <div style={{ padding: '4px 0' }}>
             <table className="term-table">
-              <thead><tr><th>time</th><th>title</th></tr></thead>
+              <thead>
+                <tr>
+                  <th style={{ width: 70 }}>time</th>
+                  <th>title</th>
+                </tr>
+              </thead>
               <tbody>
                 {report.chapters.map((ch, i) => (
                   <tr key={i}>
+                    {/* chapter time: accent mono */}
                     <td style={{ width: 70, whiteSpace: 'nowrap' }}>
-                      <a href={`https://youtu.be/${videoId}?t=${ch.start_seconds}`} target="_blank" rel="noopener noreferrer" style={{ color: 'var(--text-muted)', fontFamily: 'var(--font-mono)', fontSize: 11 }}>
+                      <a
+                        href={`https://youtu.be/${videoId}?t=${ch.start_seconds}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        style={{ color: 'var(--t-accent)', fontFamily: 'var(--font-m)', fontSize: 11 }}
+                      >
                         {fmt(ch.start_seconds)}
                       </a>
                     </td>
-                    <td>{ch.title}</td>
+                    {/* chapter title: primary text */}
+                    <td style={{ color: 'var(--t-text)', fontSize: 13, fontFamily: 'var(--font-s)' }}>{ch.title}</td>
                   </tr>
                 ))}
               </tbody>
@@ -168,10 +219,17 @@ function YouTubeReportView({ report, evidence }: { report: YouTubeReport; eviden
           <div className="term-panel-head">notable quotes</div>
           <div style={{ padding: '12px 14px', display: 'flex', flexDirection: 'column', gap: 12 }}>
             {report.quotes.map((q, i) => (
-              <div key={i} style={{ borderLeft: '2px solid var(--border-strong)', paddingLeft: 12, display: 'flex', flexDirection: 'column', gap: 4 }}>
-                <div style={{ fontSize: 12, color: 'var(--text-muted)', lineHeight: 1.6, fontStyle: 'italic' }}>&ldquo;{q.text}&rdquo;</div>
+              <div key={i} style={{ borderLeft: '2px solid var(--t-border-2)', paddingLeft: 12, display: 'flex', flexDirection: 'column', gap: 4 }}>
+                {/* quote text: muted italic sans */}
+                <div style={{ fontSize: 13, color: 'var(--t-muted)', lineHeight: 1.6, fontStyle: 'italic', fontFamily: 'var(--font-s)' }}>&ldquo;{q.text}&rdquo;</div>
+                {/* timestamp: accent mono */}
                 {q.timestamp_seconds != null && (
-                  <a href={`https://youtu.be/${videoId}?t=${q.timestamp_seconds}`} target="_blank" rel="noopener noreferrer" style={{ fontSize: 11, color: 'var(--text-dim)', fontFamily: 'var(--font-mono)' }}>
+                  <a
+                    href={`https://youtu.be/${videoId}?t=${q.timestamp_seconds}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    style={{ fontSize: 11, color: 'var(--t-accent)', fontFamily: 'var(--font-m)' }}
+                  >
                     @ {fmt(q.timestamp_seconds)}
                   </a>
                 )}
@@ -194,7 +252,21 @@ function YouTubeReportView({ report, evidence }: { report: YouTubeReport; eviden
   );
 }
 
-export default function YouTubePage() {
+const YOUTUBE_HYDRATION_MAPPER: HydrationMapper<YouTubeReport> = {
+  extractReport: (payload) => {
+    if (payload.__type__ !== '__youtube_agent_report__') return null;
+    const r = payload.report;
+    if (!r || typeof r !== 'object') return null;
+    return r as YouTubeReport;
+  },
+  extractTarget: (payload) => (typeof payload.video_url === 'string' ? payload.video_url : ''),
+  extractEvidence: (payload) => payload.evidence ?? null,
+};
+
+function YouTubePageInner() {
+  const searchParams = useSearchParams();
+  const hydrationCid = searchParams.get('cid');
+
   return (
     <AnalyzerPage<YouTubeReport>
       category="youtube"
@@ -205,8 +277,11 @@ export default function YouTubePage() {
       busyLabel="analyzing..."
       progressTitle="analysis in progress"
       failTitle="analysis failed"
+      defaultModel="deepseek-v4-flash"
       hints={HINTS}
       doneStatuses={['completed', 'done']}
+      hydrationCid={hydrationCid}
+      hydrationMapper={YOUTUBE_HYDRATION_MAPPER}
       analyze={async (url, model) => {
         const r = await youtubeAnalyze(url, model || undefined);
         return { job_id: r.job_id, cached: r.cached, report: r.report, evidence: r.evidence };
@@ -227,5 +302,13 @@ export default function YouTubePage() {
           : null
       }
     />
+  );
+}
+
+export default function YouTubePage() {
+  return (
+    <Suspense>
+      <YouTubePageInner />
+    </Suspense>
   );
 }

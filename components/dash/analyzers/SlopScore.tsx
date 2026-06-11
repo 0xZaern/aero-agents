@@ -27,18 +27,18 @@ export default function SlopScore({
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 10, fontSize: 12 }}>
-        <span style={{ color: 'var(--text-dim)', minWidth: label ? 110 : 60 }}>{label ?? '0-100'}</span>
+        <span style={{ fontFamily: 'var(--font-m)', color: 'var(--t-dim)', minWidth: label ? 110 : 60 }}>{label ?? '0-100'}</span>
         <AsciiBar value={score} />
-        <span style={{ color: 'var(--text-muted)', minWidth: 30, textAlign: 'right' }}>{score}</span>
+        <span style={{ fontFamily: 'var(--font-m)', color: 'var(--t-text)', minWidth: 30, textAlign: 'right' }}>{score}</span>
         {showVerdict && <span className={`pill ${verdict.pill}`}>{verdict.label}</span>}
       </div>
       {reasons && reasons.length > 0 && (
         <div>
-          <div style={{ color: 'var(--text-dim)', fontSize: 11, marginBottom: 4, textTransform: 'uppercase', letterSpacing: '0.1em' }}>
+          <div style={{ fontFamily: 'var(--font-m)', color: 'var(--t-dim)', fontSize: 11, marginBottom: 4, textTransform: 'uppercase', letterSpacing: '0.1em' }}>
             why this score
           </div>
           {reasons.map((r, i) => (
-            <div key={i} style={{ fontSize: 12, color: 'var(--text-muted)', paddingLeft: 10, lineHeight: 1.6 }}>· {r}</div>
+            <div key={i} style={{ fontFamily: 'var(--font-s)', fontSize: 12, color: 'var(--t-muted)', paddingLeft: 10, lineHeight: 1.6 }}>· {r}</div>
           ))}
         </div>
       )}

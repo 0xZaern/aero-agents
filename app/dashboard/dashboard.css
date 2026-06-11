@@ -313,6 +313,20 @@
 }
 .term-input::placeholder, .term-textarea::placeholder { color: var(--t-dim); }
 
+/* Native <select> widgets: kill the light-mode arrow strip the browser paints
+   on hover. color-scheme keeps the dropdown list dark; appearance:none removes
+   the built-in arrow button entirely, replaced by an inline chevron. */
+.term select,
+select.term-input {
+  color-scheme: dark;
+  appearance: none;
+  -webkit-appearance: none;
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 24 24' fill='none' stroke='%238a8a8a' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><path d='M6 9l6 6 6-6'/></svg>");
+  background-repeat: no-repeat;
+  background-position: right 9px center;
+  padding-right: 26px;
+}
+
 /* ─── prompt / caret ─────────────────────────────────────────────────── */
 .term-caret {
   display: inline-block; width: 7px; height: 1.05em;
@@ -438,10 +452,11 @@
   font-size: 10px; letter-spacing: 0.04em; text-transform: uppercase;
   border: 1px solid var(--t-border-2); color: var(--t-muted); background: var(--t-elev);
 }
-.pill::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
 .pill.active, .pill.success, .pill.running { color: var(--t-accent); border-color: var(--t-accent-dim); }
 .pill.paused { color: var(--t-dim); }
 .pill.error, .pill.failed { color: #f87171; border-color: #7f3636; }
+/* Semantic good/safe - actually green (used for GREEN flag types and safe checks) */
+.pill.good { color: #4ade80; border-color: #2f5d3f; }
 
 /* Composer selector label (model/agent/team trigger text). Caps width so a long
    model name truncates instead of pushing the row to wrap. */
@@ -740,7 +755,7 @@
   border-color: var(--t-accent-dim);
   box-shadow: 0 0 0 3px var(--t-accent-soft);
 }
-/* the textarea inside the field is borderless — the field owns the chrome */
+/* the textarea inside the field is borderless - the field owns the chrome */
 .composer-field .term-textarea {
   border: none; background: transparent; border-radius: 0;
 }
@@ -750,13 +765,13 @@
   padding: 10px 10px 0;
 }
 
-/* Developer API — revoke button turns accent on hover */
+/* Developer API - revoke button turns accent on hover */
 .revoke-btn:hover {
   color: var(--t-accent);
   border-color: var(--t-accent);
 }
 
-/* Developer API page — two-column account/reference layout, collapses on narrow screens */
+/* Developer API page - two-column account/reference layout, collapses on narrow screens */
 .dev-api-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -777,7 +792,7 @@
 /* ─── touch devices: always show hover-only actions ─────────────────── */
 @media (hover: none) {
   /* Touch: message actions are hidden until the message is tapped (see
-     .msg-row.active below) — not always-on, which felt cluttered. */
+     .msg-row.active below) - not always-on, which felt cluttered. */
   .att-x {
     opacity: 1;
   }

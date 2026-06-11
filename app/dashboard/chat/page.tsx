@@ -17,6 +17,8 @@ import {
 } from '@/lib/dash/api';
 import type { Model, Message, Agent, Crew, AttachmentOut } from '@/lib/dash/types';
 import Markdown from '@/components/dash/Markdown';
+import AgentReportCard from '@/components/dash/AgentReportCard';
+import { parseAgentReport, REPORT_CONSOLE_PATH } from '@/lib/dash/agentReport';
 import ComposerSelect, { type SelOption } from '@/components/dash/ComposerSelect';
 import HostTag from '@/components/dash/HostTag';
 import { getDefaultModel } from '@/lib/dash/customize';
@@ -105,6 +107,13 @@ function CopyBtn({ text }: { text: string }) {
 // streaming message updates many times/sec - otherwise every message re-parses its
 // full markdown AST on every streamed token (the source of chat lag).
 const AssistantBody = memo(function AssistantBody({ content, streaming = false }: { content: string; streaming?: boolean }) {
+  // Check for analyzer agent report payloads first. These are stored as JSON
+  // strings with a __type__ marker and should never be shown as raw text.
+  const agentReport = parseAgentReport(content);
+  if (agentReport) {
+    return <AgentReportCard report={agentReport} />;
+  }
+
   const { think, body } = splitThink(content);
   return (
     <>
@@ -228,6 +237,9 @@ export default function ChatPage() {
 
   // Load messages when the conversation changes. Cached history already shows
   // instantly (see setCurrentConversation); this revalidates in the background.
+  // If the conversation contains an analyzer agent-report message, redirect to
+  // the agent's console page with ?cid=<conversationId> so the full report UI
+  // renders instead of a plain chat card.
   useEffect(() => {
     if (!currentConversationId) return;
     if (skipLoadRef.current === currentConversationId) {
@@ -238,9 +250,30 @@ export default function ChatPage() {
     let cancelled = false;
     getConversationMessages(convId)
       .then((msgs) => {
-        // Drop a stale response if the user switched chats mid-fetch — otherwise
+        // Drop a stale response if the user switched chats mid-fetch - otherwise
         // a slow load for the old chat clobbers the one now on screen.
         if (cancelled || useChatStore.getState().currentConversationId !== convId) return;
+
+        // Check whether any assistant message is a stored agent-report payload.
+        // Use the last one found (most recent scan wins).
+        let consolePath: string | null = null;
+        for (let i = msgs.length - 1; i >= 0; i--) {
+          const m = msgs[i];
+          if (m.role !== 'assistant') continue;
+          const rep = parseAgentReport(m.content);
+          if (rep) {
+            consolePath = REPORT_CONSOLE_PATH[rep.__type__] ?? null;
+            break;
+          }
+        }
+
+        if (consolePath) {
+          // Replace the current history entry so the user can still press Back
+          // and land on the chat list, not this chat page.
+          router.replace(`${consolePath}?cid=${convId}`);
+          return;
+        }
+
         setMessages(msgs);
       })
       .catch(() => { /* keep cached history on failure */ });
@@ -275,7 +308,7 @@ export default function ChatPage() {
           try {
             const msgs = await getConversationMessages(c.id);
             if (!cancelled) useChatStore.getState().primeCache(c.id, msgs);
-          } catch { /* ignore — will load on real open */ }
+          } catch { /* ignore - will load on real open */ }
         }
       };
       void Promise.all(Array.from({ length: CONCURRENCY }, worker));
@@ -328,7 +361,7 @@ export default function ChatPage() {
 
     if (!currentConversationId) {
       // Show the user's message instantly, before the (awaited) conversation
-      // creation round-trip — otherwise the composer flips to "thinking" with
+      // creation round-trip - otherwise the composer flips to "thinking" with
       // no message on screen until the network call resolves.
       setMessages([userMsg]);
       try {
@@ -413,6 +446,28 @@ export default function ChatPage() {
   const lastUserId = useMemo(() => [...messages].reverse().find((m) => m.role === 'user')?.id, [messages]);
   const lastAssistantId = useMemo(() => [...messages].reverse().find((m) => m.role === 'assistant')?.id, [messages]);
 
+  // ── Agent-report conversations open in their console, never in chat. ──
+  // Cached messages render instantly on conversation switch, so the check must
+  // run on whatever is on screen (not only on the network refetch) and the chat
+  // body must stay hidden while the redirect happens - otherwise the raw report
+  // flashes before the console loads.
+  const reportConsolePath = useMemo(() => {
+    for (let i = messages.length - 1; i >= 0; i--) {
+      const m = messages[i];
+      if (m.role !== 'assistant') continue;
+      const rep = parseAgentReport(m.content);
+      if (rep) return REPORT_CONSOLE_PATH[rep.__type__] ?? null;
+    }
+    return null;
+  }, [messages]);
+
+  useEffect(() => {
+    if (reportConsolePath && currentConversationId) {
+      router.replace(`${reportConsolePath}?cid=${currentConversationId}`);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [reportConsolePath, currentConversationId]);
+
   // Prompt host for assistant lines: crew → agent → model.
   const currentConv = conversations.find((c) => c.id === currentConversationId);
   const convCrew = currentConv?.crewId ? crews.find((c) => c.id === currentConv.crewId) : null;
@@ -487,6 +542,12 @@ export default function ChatPage() {
     const rest = ordered.filter((m) => !m.supportsVision).map((m) => ({ ...opt(m), disabled: true, sub: `${m.provider} · no image` }));
     return [...vision, ...rest];
   }, [models, hasImage]);
+
+  // While redirecting an agent-report conversation to its console, render a
+  // blank shell so the raw report never flashes in chat.
+  if (reportConsolePath) {
+    return <div style={{ position: 'absolute', inset: 0, background: 'var(--bg)' }} />;
+  }
 
   return (
     <div style={{ position: 'absolute', inset: 0, background: 'var(--bg)', display: 'flex', overflow: 'hidden' }}>

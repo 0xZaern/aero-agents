@@ -344,7 +344,7 @@ function DefaultModelPanel() {
           <select
             value={value}
             onChange={(e) => onPick(e.target.value)}
-            style={{ width: 'auto', padding: '7px 11px', fontSize: 12 }}
+            style={{ width: 'auto', padding: '7px 26px 7px 11px', fontSize: 12 }}
           >
             {models.map((m) => (
               <option key={m.id} value={m.id}>{m.displayName} · {m.provider}</option>

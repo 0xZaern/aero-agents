@@ -37,7 +37,7 @@ const MAX_TWEET_CHARS = 2000;
 const MAX_NARRATIVES = 20;
 const CONV_STORAGE_KEY = 'aero.xagent.convId';
 
-// ─── Reply parsing (ported from aero XAgentPanel) ──────────────────────────
+// ─── Reply parsing (ported from the legacy XAgentPanel) ──────────────────────────
 interface XAgentReply { text: string; style: string; charCount: number }
 interface XAgentData { replies: XAgentReply[]; tips: string[] }
 
@@ -95,12 +95,23 @@ function ReplyCard({ reply }: { reply: XAgentReply }) {
         {reply.style}
         <span style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 8 }}>
           <span className={`pill ${countColor}`}>{count} ch</span>
-          <button className="term-btn ghost" style={{ padding: '2px 8px', fontSize: 11 }} onClick={handleCopy}>
-            {copied ? 'copied ✓' : 'copy'}
+          <button
+            className="term-btn ghost"
+            style={{ padding: '2px 8px', fontSize: 11 }}
+            onClick={handleCopy}
+          >
+            {copied ? 'copied' : 'copy'}
           </button>
         </span>
       </div>
-      <div style={{ padding: '12px 14px', fontSize: 13, lineHeight: 1.6, color: 'var(--text)', whiteSpace: 'pre-wrap' }}>
+      <div style={{
+        padding: '12px 14px',
+        fontFamily: 'var(--font-m)',
+        fontSize: 13,
+        lineHeight: 1.6,
+        color: 'var(--t-text)',
+        whiteSpace: 'pre-wrap',
+      }}>
         {reply.text}
       </div>
     </div>
@@ -357,44 +368,90 @@ export default function XAgentPage() {
 
   return (
     <div className="term-scroll">
-      <div className="term-pad" style={{ maxWidth: 1100 }}>
+      <div className="term-pad" style={{ maxWidth: 1100, marginLeft: 'auto', marginRight: 'auto' }}>
 
-        <button
-          className="term-btn ghost"
-          style={{ alignSelf: 'flex-start', fontSize: 12, padding: '4px 10px', marginBottom: 14 }}
-          onClick={() => { useChatStore.getState().setSelectedAgentId(null); router.push('/dashboard/chat'); }}
-        >
-          ← back to chat
-        </button>
-
-        {/* header */}
-        <div style={{ marginBottom: 14 }}>
-          <div style={{ color: 'var(--text-dim)', fontSize: 11, letterSpacing: '0.14em', textTransform: 'uppercase', marginBottom: 4 }}>
-            agent / x (twitter)
-          </div>
-          <div style={{ color: 'var(--text)', fontSize: 13 }}>
-            generate on-brand replies to any tweet - paste a tweet or x.com link, pick tones, go
+        {/* header with inline back button */}
+        <div style={{ display: 'flex', alignItems: 'stretch', gap: 12, marginBottom: 14 }}>
+          <button
+            className="term-btn ghost"
+            title="back to chat"
+            aria-label="back to chat"
+            style={{
+              width: 30,
+              height: 'auto',
+              alignSelf: 'stretch',
+              padding: 0,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              flexShrink: 0,
+            }}
+            onClick={() => { useChatStore.getState().setSelectedAgentId(null); router.push('/dashboard/chat'); }}
+          >
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+              <path d="M19 12H5" />
+              <path d="M12 19l-7-7 7-7" />
+            </svg>
+          </button>
+          <div>
+            <div style={{
+              fontFamily: 'var(--font-m)',
+              color: 'var(--t-dim)',
+              fontSize: 11,
+              letterSpacing: '0.14em',
+              textTransform: 'uppercase',
+              marginBottom: 4,
+            }}>
+              agent / x (twitter)
+            </div>
+            <div style={{ fontFamily: 'var(--font-m)', color: 'var(--t-muted)', fontSize: 12 }}>
+              generate on-brand replies to any tweet - paste a tweet or x.com link, pick tones, go
+            </div>
           </div>
         </div>
 
         {/* tips strip */}
-        <div className="term-panel" style={{ marginBottom: 14 }}>
-          <div className="term-panel-head">tips</div>
-          <div style={{ padding: '10px 14px', fontSize: 12, color: 'var(--text-muted)', lineHeight: 1.7 }}>
+        <div
+          className="term-panel"
+          style={{ marginBottom: 14, display: 'flex', alignItems: 'center', gap: 14, padding: '10px 14px' }}
+        >
+          <span style={{
+            fontFamily: 'var(--font-m)',
+            color: 'var(--t-dim)',
+            fontSize: 11,
+            letterSpacing: '0.14em',
+            textTransform: 'uppercase',
+            flexShrink: 0,
+          }}>
+            tips
+          </span>
+          <span style={{
+            fontFamily: 'var(--font-m)',
+            fontSize: 12,
+            color: 'var(--t-muted)',
+            whiteSpace: 'nowrap',
+            overflow: 'hidden',
+            textOverflow: 'ellipsis',
+          }}>
             reply within 15 min · best Tue-Thu 8-11am EST · target 40-50 replies/day · sweet spot 70-100 chars · ask questions, never just agree
-          </div>
+          </span>
         </div>
 
         <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) minmax(0, 1fr)', gap: 14, alignItems: 'start' }}>
 
           {/* ── LEFT: form ── */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
 
             {/* their tweet */}
             <div className="term-panel">
               <div className="term-panel-head">
                 their tweet
-                <span style={{ marginLeft: 'auto', color: tweetText.length > MAX_TWEET_CHARS ? 'var(--t-err)' : 'var(--text-dim)', fontSize: 11 }}>
+                <span style={{
+                  marginLeft: 'auto',
+                  fontFamily: 'var(--font-m)',
+                  color: tweetText.length > MAX_TWEET_CHARS ? '#f87171' : 'var(--t-dim)',
+                  fontSize: 11,
+                }}>
                   {tweetText.length} / {MAX_TWEET_CHARS}
                 </span>
               </div>
@@ -414,7 +471,7 @@ export default function XAgentPage() {
             {/* saved narratives */}
             <div className="term-panel">
               <div className="term-panel-head">saved narratives</div>
-              <div style={{ padding: '12px 14px', display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+              <div style={{ padding: '10px 14px', display: 'flex', flexWrap: 'wrap', gap: 8 }}>
                 {narratives.map((n) => (
                   <span
                     key={n.id}
@@ -426,7 +483,12 @@ export default function XAgentPage() {
                     style={{ cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: 6 }}
                   >
                     <span style={{ maxWidth: 120, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{n.name}</span>
-                    <button onClick={(e) => deleteNarrative(n.id, e)} style={{ color: 'var(--text-dim)' }}>✕</button>
+                    <button
+                      onClick={(e) => deleteNarrative(n.id, e)}
+                      style={{ color: 'var(--t-dim)', lineHeight: 1, background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}
+                    >
+                      x
+                    </button>
                   </span>
                 ))}
                 {savingName === null ? (
@@ -437,17 +499,14 @@ export default function XAgentPage() {
                       autoFocus
                       className="term-input"
                       style={{ width: 140, padding: '4px 8px', fontSize: 12 }}
-                      placeholder="name…"
+                      placeholder="name"
                       value={savingName}
                       onChange={(e) => setSavingName(e.target.value)}
                       onKeyDown={(e) => { if (e.key === 'Enter') confirmSave(); if (e.key === 'Escape') setSavingName(null); }}
                     />
                     <button className="term-btn" style={{ padding: '4px 10px', fontSize: 11 }} onClick={confirmSave}>save</button>
-                    <button className="term-btn ghost" style={{ padding: '4px 8px', fontSize: 11 }} onClick={() => setSavingName(null)}>✕</button>
+                    <button className="term-btn ghost" style={{ padding: '4px 8px', fontSize: 11 }} onClick={() => setSavingName(null)}>x</button>
                   </span>
-                )}
-                {narratives.length === 0 && savingName === null && (
-                  <span style={{ color: 'var(--text-dim)', fontSize: 12 }}>none yet</span>
                 )}
               </div>
             </div>
@@ -455,7 +514,7 @@ export default function XAgentPage() {
             {/* your narrative */}
             <div className="term-panel">
               <div className="term-panel-head">your narrative</div>
-              <div style={{ padding: '12px 14px', display: 'flex', flexDirection: 'column', gap: 10 }}>
+              <div style={{ padding: '10px 14px', display: 'flex', flexDirection: 'column', gap: 10 }}>
                 <textarea
                   className="term-textarea"
                   rows={3}
@@ -470,7 +529,7 @@ export default function XAgentPage() {
                   disabled={loadingKeywords || !narrative.trim()}
                   style={{ fontSize: 12 }}
                 >
-                  {loadingKeywords ? 'suggesting…' : 'suggest keywords'}
+                  {loadingKeywords ? 'suggesting...' : 'suggest keywords'}
                 </button>
                 {keywords.length > 0 && (
                   <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
@@ -496,19 +555,33 @@ export default function XAgentPage() {
             <div className="term-panel">
               <div className="term-panel-head">
                 reply tone
-                <span style={{ marginLeft: 'auto', color: 'var(--text-dim)', fontSize: 11 }}>{tones.length} / 3</span>
+                <span style={{ marginLeft: 'auto', fontFamily: 'var(--font-m)', color: 'var(--t-dim)', fontSize: 11 }}>{tones.length} / 3</span>
               </div>
-              <div style={{ padding: '12px 14px', display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+              <div style={{ padding: '10px 14px', display: 'flex', flexWrap: 'wrap', gap: 8 }}>
                 {TONES.map((t) => {
                   const sel = tones.includes(t);
                   const maxed = tones.length >= 3 && !sel;
                   return (
                     <button
                       key={t}
-                      className={`term-chip${sel ? ' accent' : ''}`}
                       disabled={maxed}
                       onClick={() => toggleTone(t)}
-                      style={{ cursor: maxed ? 'not-allowed' : 'pointer', opacity: maxed ? 0.4 : 1 }}
+                      style={{
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        padding: '3px 10px',
+                        borderRadius: 'var(--t-radius-sm)',
+                        fontFamily: 'var(--font-m)',
+                        fontSize: 11,
+                        letterSpacing: '0.04em',
+                        border: '1px solid',
+                        background: sel ? 'var(--t-accent-soft)' : 'var(--t-elev)',
+                        borderColor: sel ? 'var(--t-accent-dim)' : 'var(--t-border-2)',
+                        color: sel ? 'var(--t-accent)' : 'var(--t-muted)',
+                        cursor: maxed ? 'not-allowed' : 'pointer',
+                        opacity: maxed ? 0.4 : 1,
+                        transition: 'background 0.15s, border-color 0.15s, color 0.15s',
+                      }}
                     >
                       {t}
                     </button>
@@ -517,21 +590,65 @@ export default function XAgentPage() {
               </div>
             </div>
 
-            {/* emojis + model */}
+            {/* options: emojis + model */}
             <div className="term-panel">
               <div className="term-panel-head">options</div>
-              <div style={{ padding: '12px 14px', display: 'flex', flexDirection: 'column', gap: 10 }}>
-                <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 12, color: 'var(--text-muted)', cursor: 'pointer' }}>
-                  <input type="checkbox" checked={useEmojis} onChange={(e) => setUseEmojis(e.target.checked)} />
+              <div style={{ padding: '10px 14px', display: 'flex', flexDirection: 'column', gap: 10 }}>
+                <label style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 8,
+                  fontFamily: 'var(--font-m)',
+                  fontSize: 12,
+                  color: 'var(--t-muted)',
+                  cursor: 'pointer',
+                }}>
+                  <span style={{ position: 'relative', width: 13, height: 13, display: 'inline-flex', flexShrink: 0 }}>
+                    <input
+                      type="checkbox"
+                      checked={useEmojis}
+                      onChange={(e) => setUseEmojis(e.target.checked)}
+                      style={{
+                        appearance: 'none',
+                        WebkitAppearance: 'none',
+                        margin: 0,
+                        width: 13,
+                        height: 13,
+                        background: 'var(--t-bg)',
+                        border: `1px solid ${useEmojis ? 'var(--t-accent-dim)' : 'var(--t-border-2)'}`,
+                        borderRadius: 3,
+                        cursor: 'pointer',
+                        transition: 'border-color 0.15s',
+                      }}
+                    />
+                    {useEmojis && (
+                      <span
+                        style={{
+                          position: 'absolute',
+                          inset: 0,
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          color: 'var(--t-accent)',
+                          fontFamily: 'var(--font-m)',
+                          fontSize: 10,
+                          lineHeight: 1,
+                          pointerEvents: 'none',
+                        }}
+                      >
+                        x
+                      </span>
+                    )}
+                  </span>
                   use emojis
                 </label>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                  <span style={{ color: 'var(--text-dim)', fontSize: 11 }}>model</span>
+                  <span style={{ fontFamily: 'var(--font-m)', color: 'var(--t-dim)', fontSize: 11 }}>model</span>
                   <select
                     className="term-input"
                     value={modelId}
                     onChange={(e) => setModelId(e.target.value)}
-                    style={{ flex: 1, padding: '5px 9px', fontSize: 12 }}
+                    style={{ flex: 1, padding: '5px 26px 5px 9px', fontSize: 12 }}
                   >
                     {recModels.length > 0 && (
                       <optgroup label="recommended">
@@ -553,22 +670,33 @@ export default function XAgentPage() {
               disabled={!canGenerate}
               style={{ width: '100%', padding: '10px' }}
             >
-              {isResolving ? 'fetching tweet…' : isStreaming ? 'generating…' : 'generate replies'}
+              {isResolving ? 'fetching tweet...' : isStreaming ? 'generating...' : 'generate replies'}
             </button>
             {!agent && (
-              <div style={{ fontSize: 11, color: 'var(--text-dim)' }}>
-                loading X-Agent preset… (ensure the backend is seeded)
+              <div style={{ fontFamily: 'var(--font-m)', fontSize: 11, color: 'var(--t-dim)' }}>
+                loading X-Agent preset... (ensure the backend is seeded)
               </div>
             )}
           </div>
 
           {/* ── RIGHT: results ── */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-            <div className="term-panel-head" style={{ border: 0, padding: 0, display: 'flex', alignItems: 'center', gap: 10 }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+
+            {/* results column header - matches term-panel-head style exactly */}
+            <div style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: 8,
+              fontFamily: 'var(--font-m)',
+              fontSize: 11,
+              letterSpacing: '0.08em',
+              textTransform: 'uppercase',
+              color: 'var(--t-muted)',
+            }}>
               generated replies
               <span style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 10 }}>
                 {memory && memory.total_replies_generated > 0 && (
-                  <span style={{ color: 'var(--text-dim)', fontSize: 11 }}>
+                  <span style={{ fontFamily: 'var(--font-m)', color: 'var(--t-dim)', fontSize: 11, letterSpacing: 0 }}>
                     {memory.total_replies_generated} generated · {memory.total_replies_used} used
                   </span>
                 )}
@@ -586,7 +714,7 @@ export default function XAgentPage() {
                 ? streamingData.replies.map((r, i) => <ReplyCard key={`s${i}`} reply={r} />)
                 : (
                   <div className="term-panel">
-                    <div style={{ padding: '14px', fontSize: 12, color: 'var(--text-dim)' }}>
+                    <div style={{ padding: '14px', fontFamily: 'var(--font-m)', fontSize: 12, color: 'var(--t-dim)' }}>
                       generating<span className="term-caret" />
                     </div>
                   </div>
@@ -597,27 +725,36 @@ export default function XAgentPage() {
             {!isStreaming && generations.map((gen, gi) => (
               <div key={gi} style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
                 {gen.originalInput && (
-                  <div style={{ fontSize: 11, color: 'var(--text-dim)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                    ↳ {gen.originalInput}
+                  <div style={{
+                    fontFamily: 'var(--font-m)',
+                    fontSize: 11,
+                    color: 'var(--t-dim)',
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis',
+                    whiteSpace: 'nowrap',
+                  }}>
+                    {gen.originalInput}
                   </div>
                 )}
                 {gen.data.replies.map((r, i) => <ReplyCard key={i} reply={r} />)}
                 {gen.data.tips?.length > 0 && (
                   <div className="term-panel">
                     <div className="term-panel-head">tips</div>
-                    <div style={{ padding: '10px 14px', fontSize: 12, color: 'var(--text-muted)', lineHeight: 1.6 }}>
-                      {gen.data.tips.map((t, i) => <div key={i}>· {t}</div>)}
+                    <div style={{ padding: '10px 14px', fontFamily: 'var(--font-m)', fontSize: 12, color: 'var(--t-muted)', lineHeight: 1.6 }}>
+                      {gen.data.tips.map((tip, i) => <div key={i}>· {tip}</div>)}
                     </div>
                   </div>
                 )}
               </div>
             ))}
 
-            {/* empty */}
+            {/* empty state */}
             {!isStreaming && !hasResults && (
               <div className="term-empty" style={{ minHeight: 200 }}>
-                <div>no replies yet</div>
-                <div style={{ fontSize: 12, color: 'var(--text-dim)' }}>fill in a tweet and hit generate<span className="term-caret" /></div>
+                <div style={{ fontFamily: 'var(--font-m)', fontSize: 13, color: 'var(--t-muted)' }}>no replies yet</div>
+                <div style={{ fontFamily: 'var(--font-m)', fontSize: 12, color: 'var(--t-dim)' }}>
+                  fill in a tweet and hit generate<span className="term-caret" />
+                </div>
               </div>
             )}
           </div>

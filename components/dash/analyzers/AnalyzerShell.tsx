@@ -2,13 +2,31 @@
 
 import { useEffect, useRef, useCallback } from 'react';
 
-// ─── Monochrome ASCII progress bar (8 filled blocks out of 12 total) ─────────
+// ─── Full-width segmented score bar (terminal block style) ───────────────────
+// Stretches to fill the remaining row width inside a flex container.
 export function AsciiBar({ value, max = 100 }: { value: number; max?: number }) {
-  const TOTAL = 14;
-  const filled = Math.round((value / max) * TOTAL);
+  const pct = Math.max(0, Math.min(100, (value / max) * 100));
   return (
-    <span style={{ fontFamily: 'var(--font-mono)', letterSpacing: '0.05em', color: 'var(--text-muted)' }}>
-      {'█'.repeat(filled)}{'░'.repeat(TOTAL - filled)}
+    <span
+      style={{
+        flex: 1,
+        minWidth: 80,
+        height: 12,
+        border: '1px solid var(--t-border-2)',
+        borderRadius: 2,
+        overflow: 'hidden',
+        display: 'inline-block',
+      }}
+    >
+      <span
+        style={{
+          display: 'block',
+          width: `${pct}%`,
+          height: '100%',
+          background: 'repeating-linear-gradient(90deg, var(--t-muted) 0 8px, transparent 8px 11px)',
+          transition: 'width 1.2s ease',
+        }}
+      />
     </span>
   );
 }
@@ -71,10 +89,10 @@ export function usePoller(
 // ─── Allowed model list (mirrors backend ALLOWED_MODELS in all three routers) ─
 export const ALLOWED_MODELS = [
   { id: 'claude-sonnet-4-6',  label: 'claude-sonnet-4-6' },
-  { id: 'claude-opus-4-6',    label: 'claude-opus-4-6' },
-  { id: 'deepseek-v3.2',      label: 'deepseek-v3.2' },
-  { id: 'grok-41-fast',       label: 'grok-41-fast' },
-  { id: 'kimi-k2-5',          label: 'kimi-k2-5' },
-  { id: 'minimax-m27',        label: 'minimax-m27' },
+  { id: 'claude-opus-4-8',    label: 'claude-opus-4-8' },
+  { id: 'deepseek-v4-flash',  label: 'deepseek-v4-flash' },
+  { id: 'grok-4-20',          label: 'grok-4-20' },
+  { id: 'kimi-k2-6',          label: 'kimi-k2-6' },
+  { id: 'minimax-m3',         label: 'minimax-m3' },
   { id: 'llama-3.3-70b',      label: 'llama-3.3-70b' },
 ] as const;

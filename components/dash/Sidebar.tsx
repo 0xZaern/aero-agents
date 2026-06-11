@@ -5,9 +5,10 @@ import { usePathname, useRouter } from 'next/navigation';
 import { useChatStore } from '@/lib/dash/stores/chatStore';
 import { useAuthStore } from '@/lib/dash/stores/authStore';
 import { useScheduledTasksStore } from '@/lib/dash/stores/scheduledTasksStore';
-import { getConversations, deleteConversation, updateConversation } from '@/lib/dash/api';
+import { getConversations, deleteConversation, updateConversation, getAgents } from '@/lib/dash/api';
 import { listFolders, createFolder, deleteFolder, moveConversation, pinConversation } from '@/lib/dash/foldersApi';
-import type { Conversation } from '@/lib/dash/types';
+import { AGENT_CONSOLE_ROUTE } from '@/lib/dash/agentConsoles';
+import type { Conversation, Agent } from '@/lib/dash/types';
 
 function Ic({ d, s = 14 }: { d: string; s?: number }) {
   return (
@@ -67,11 +68,24 @@ export default function Sidebar({ onNavigate }: { onNavigate?: () => void } = {}
   const user = useAuthStore((s) => s.user);
   const onChat = pathname === '/dashboard/chat';
 
+  // Preset agents - used to route analyzer conversations straight to their
+  // console (conversation.agentId -> agent name -> console).
+  const [presetAgents, setPresetAgents] = useState<Agent[]>([]);
+
   useEffect(() => {
     getConversations().then(setConversations).catch(() => {});
     listFolders().then(setFolders).catch(() => {});
     fetchTasks().catch(() => {});
+    getAgents('presets').then(setPresetAgents).catch(() => {});
   }, [setConversations, setFolders, fetchTasks]);
+
+  // conversation -> console route (or null for plain chats). Instant, no fetch.
+  const consoleRouteFor = (c: Conversation): string | null => {
+    if (!c.agentId) return null;
+    const agent = presetAgents.find((a) => a.id === c.agentId);
+    if (!agent) return null;
+    return AGENT_CONSOLE_ROUTE[agent.name] ?? null;
+  };
 
   useEffect(() => { if (newFolderOpen) folderInputRef.current?.focus(); }, [newFolderOpen]);
   useEffect(() => {
@@ -95,7 +109,15 @@ export default function Sidebar({ onNavigate }: { onNavigate?: () => void } = {}
   function newSession() {
     setCurrentConversation(null); setMessages([]); router.push('/dashboard/chat'); onNavigate?.();
   }
-  function openSession(id: string) { setCurrentConversation(id); router.push('/dashboard/chat'); onNavigate?.(); }
+  function openSession(c: Conversation | string) {
+    const conv = typeof c === 'string' ? conversations.find((x) => x.id === c) : c;
+    const id = typeof c === 'string' ? c : c.id;
+    setCurrentConversation(id);
+    // Analyzer conversations open directly in their console (no chat detour).
+    const route = conv ? consoleRouteFor(conv) : null;
+    router.push(route ? `${route}?cid=${id}` : '/dashboard/chat');
+    onNavigate?.();
+  }
   function openTask(convId: string | null) { if (convId) openSession(convId); }
 
   async function submitNewFolder() {
@@ -131,7 +153,10 @@ export default function Sidebar({ onNavigate }: { onNavigate?: () => void } = {}
   const short = user?.walletAddress ? `${user.walletAddress.slice(0, 6)}…${user.walletAddress.slice(-4)}` : 'guest';
 
   function ChatRow({ c }: { c: Conversation }) {
-    const active = onChat && c.id === currentConversationId;
+    // Highlight on the chat page AND on analyzer console pages (where an
+    // analyzer conversation opened via the sidebar is the current one).
+    const onConsole = Object.values(AGENT_CONSOLE_ROUTE).includes(pathname);
+    const active = (onChat || onConsole) && c.id === currentConversationId;
     if (renamingId === c.id) {
       return (
         <div style={{ padding: '2px 8px' }}>
@@ -146,7 +171,7 @@ export default function Sidebar({ onNavigate }: { onNavigate?: () => void } = {}
     }
     return (
       <button
-        onClick={() => openSession(c.id)}
+        onClick={() => openSession(c)}
         onContextMenu={(e) => { e.preventDefault(); setCtx({ conv: c, x: e.clientX, y: e.clientY }); }}
         className={`term-nav-item${active ? ' active' : ''}`}
         style={{ justifyContent: 'space-between' }}
