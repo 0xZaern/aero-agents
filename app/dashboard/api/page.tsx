@@ -1,11 +1,12 @@
 'use client';
 
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import {
   listApiKeys, createApiKey, revokeApiKey, getApiConfig, getApiUsage, getApiBalance,
   type ApiKey, type ApiConfig, type VvvPack, type ApiUsageRow,
 } from '@/lib/dash/api';
 import { sendVvvPayment, type PayStep } from '@/lib/dash/vvvPayment';
+import { ApiReferenceModal } from '@/components/dash/ApiReferenceModal';
 
 function Panel({ label, right, children }: { label: string; right?: React.ReactNode; children: React.ReactNode }) {
   return (
@@ -54,17 +55,38 @@ const API_BASE =
 
 // The public endpoint catalog. Adding an agent later = one more entry here;
 // the grid wraps, so the layout scales no matter how many agents ship.
-type Endpoint = { method: 'GET' | 'POST'; path: string; desc: string; billing: string; model: boolean };
+// `body` shows the minimal request JSON for each endpoint on the card.
+type Endpoint = { method: 'GET' | 'POST'; path: string; desc: string; billing: string; model: boolean; body?: string };
 const ENDPOINTS: Endpoint[] = [
-  { method: 'POST', path: '/v1/chat', desc: 'Chat completion across any model', billing: 'per-token', model: true },
-  { method: 'POST', path: '/v1/agent', desc: 'Run a preset tool-using agent', billing: 'per-token', model: true },
-  { method: 'POST', path: '/v1/youtube', desc: 'Transcribe and summarize a video', billing: 'per-token', model: true },
-  { method: 'POST', path: '/v1/github', desc: 'Developer audit of a public repo', billing: 'per-token', model: true },
-  { method: 'POST', path: '/v1/docs', desc: 'Audit documentation for gaps and clarity', billing: 'per-token', model: true },
-  { method: 'POST', path: '/v1/legitimacy', desc: 'Legitimacy audit of a project URL', billing: 'per-token', model: true },
-  { method: 'POST', path: '/v1/slop', desc: 'AI-slop scan of text or code', billing: 'flat fee', model: false },
-  { method: 'GET', path: '/v1/models', desc: 'List callable models and pricing', billing: 'free', model: false },
+  { method: 'POST', path: '/v1/chat',       desc: 'Chat completion across any model',        billing: 'per-token', model: true,  body: '{"model","messages":[{"role","content"}]}' },
+  { method: 'POST', path: '/v1/agent',      desc: 'Run a preset tool-using agent',           billing: 'per-token', model: true,  body: '{"agent","message","model"}' },
+  { method: 'POST', path: '/v1/youtube',    desc: 'Transcribe and summarize a video',        billing: 'per-token', model: true,  body: '{"url","model"}' },
+  { method: 'POST', path: '/v1/github',     desc: 'Developer audit of a public repo',        billing: 'per-token', model: true,  body: '{"repo_url","model"}' },
+  { method: 'POST', path: '/v1/docs',       desc: 'Audit documentation for gaps and clarity',billing: 'per-token', model: true,  body: '{"url","model"}' },
+  { method: 'POST', path: '/v1/legitimacy', desc: 'Legitimacy audit of a project URL',       billing: 'per-token', model: true,  body: '{"project_url","model"}' },
+  { method: 'POST', path: '/v1/slop',       desc: 'AI-slop scan of text or code',            billing: 'flat fee',  model: false, body: '{"text"} or {"files"}' },
+  { method: 'GET',  path: '/v1/models',     desc: 'List callable models and pricing',        billing: 'free',      model: false },
 ];
+
+// Attempt clipboard write; on failure, select the text in the target element so
+// the user can copy manually. Returns true if clipboard succeeded.
+async function copyToClipboard(text: string, fallbackEl?: HTMLElement | null): Promise<boolean> {
+  try {
+    await navigator.clipboard.writeText(text);
+    return true;
+  } catch {
+    // Clipboard API unavailable (e.g. non-HTTPS, Firefox strict mode).
+    if (fallbackEl) {
+      try {
+        const range = document.createRange();
+        range.selectNodeContents(fallbackEl);
+        const sel = window.getSelection();
+        if (sel) { sel.removeAllRanges(); sel.addRange(range); }
+      } catch { /* range selection also failed - nothing more to do */ }
+    }
+    return false;
+  }
+}
 
 export default function DeveloperApiPage() {
   const [keys, setKeys] = useState<ApiKey[]>([]);
@@ -76,6 +98,16 @@ export default function DeveloperApiPage() {
   const [creating, setCreating] = useState(false);
   const [freshKey, setFreshKey] = useState<string | null>(null);  // raw key shown once
   const [copied, setCopied] = useState(false);
+  const [copyError, setCopyError] = useState(false);  // true = clipboard failed, text selected
+
+  const [curlCopied, setCurlCopied] = useState(false);
+  const [showDocs, setShowDocs] = useState(false);
+
+  // Ref to the <code> element holding the fresh key so we can fallback-select it.
+  const freshKeyRef = useRef<HTMLElement | null>(null);
+
+  // Ref for the revoke confirmation row: maps key id -> true when in confirm state.
+  const [confirmRevoke, setConfirmRevoke] = useState<string | null>(null);
 
   const [step, setStep] = useState<PayStep>('idle');
   const [error, setError] = useState<string | null>(null);
@@ -98,8 +130,10 @@ export default function DeveloperApiPage() {
     if (creating) return;
     setCreating(true); setError(null);
     try {
-      const res = await createApiKey(label.trim());  // blank → backend auto-names "API key N"
+      const res = await createApiKey(label.trim());  // blank -> backend auto-names "API key N"
       setFreshKey(res.key);
+      setCopied(false);
+      setCopyError(false);
       setLabel('');
       reloadKeys();
     } catch (e) {
@@ -110,12 +144,39 @@ export default function DeveloperApiPage() {
   }
 
   async function revoke(id: string) {
+    // First click arms the confirm state; second click (confirm button) fires.
+    if (confirmRevoke !== id) {
+      setConfirmRevoke(id);
+      return;
+    }
+    setConfirmRevoke(null);
     try { await revokeApiKey(id); reloadKeys(); } catch { /* ignore */ }
+  }
+
+  function cancelRevoke() {
+    setConfirmRevoke(null);
   }
 
   async function copyKey() {
     if (!freshKey) return;
-    try { await navigator.clipboard.writeText(freshKey); setCopied(true); setTimeout(() => setCopied(false), 1500); } catch { /* ignore */ }
+    const ok = await copyToClipboard(freshKey, freshKeyRef.current);
+    if (ok) {
+      setCopied(true);
+      setCopyError(false);
+      setTimeout(() => setCopied(false), 1500);
+    } else {
+      // Clipboard failed: text is now selected. Tell the user to copy manually.
+      setCopyError(true);
+    }
+  }
+
+  async function copyCurl() {
+    const ok = await copyToClipboard(curl);
+    if (ok) {
+      setCurlCopied(true);
+      setTimeout(() => setCurlCopied(false), 1500);
+    }
+    // quickstart copy failure is low-stakes: silently degrade (no error banner)
   }
 
   async function buy(pack: VvvPack) {
@@ -133,10 +194,21 @@ export default function DeveloperApiPage() {
   }
 
   const packs = config?.packs ?? [];
+
+  // Build curl inside the component so freshKey can be substituted in.
+  const bearerToken = freshKey ?? 'sk_aero_...';
   const curl = `curl ${API_BASE}/v1/chat \\
-  -H "Authorization: Bearer sk_aero_..." \\
+  -H "Authorization: Bearer ${bearerToken}" \\
   -H "Content-Type: application/json" \\
   -d '{"model":"claude-sonnet-4-6","messages":[{"role":"user","content":"Hello"}]}'`;
+
+  const curlGithub = `curl -X POST ${API_BASE}/v1/github \\
+  -H "Authorization: Bearer ${bearerToken}" \\
+  -H "Content-Type: application/json" \\
+  -d '{"repo_url":"https://github.com/owner/repo","model":"claude-sonnet-4-6"}'`;
+
+  // Suppress unused import lint warning - fmtDate is available for future use.
+  void fmtDate;
 
   return (
     <div className="term-scroll" style={{ position: 'absolute', inset: 0 }}>
@@ -168,10 +240,18 @@ export default function DeveloperApiPage() {
           <div className="term-panel" style={{ border: '1px solid var(--t-accent-dim)' }}>
             <div className="term-panel-head">your new key, copy it now (it won&apos;t be shown again)</div>
             <div style={{ padding: '14px 18px', display: 'flex', flexDirection: 'column', gap: 10 }}>
-              <code style={{ fontFamily: 'var(--font-m)', fontSize: 12.5, wordBreak: 'break-all', color: 'var(--t-accent)', background: 'var(--t-bg-2)', padding: '10px 12px', borderRadius: 'var(--t-radius-sm)' }}>{freshKey}</code>
+              <code
+                ref={freshKeyRef}
+                style={{ fontFamily: 'var(--font-m)', fontSize: 12.5, wordBreak: 'break-all', color: 'var(--t-accent)', background: 'var(--t-bg-2)', padding: '10px 12px', borderRadius: 'var(--t-radius-sm)' }}
+              >{freshKey}</code>
+              {copyError && (
+                <span style={{ fontSize: 11, color: '#f87171' }}>
+                  clipboard unavailable - the key text is selected above, press Ctrl+C (or Cmd+C) to copy
+                </span>
+              )}
               <div style={{ display: 'flex', gap: 8 }}>
                 <button className="term-btn primary" onClick={copyKey}>{copied ? '✓ copied' : 'copy key'}</button>
-                <button className="term-btn ghost" onClick={() => setFreshKey(null)}>done</button>
+                <button className="term-btn ghost" onClick={() => { setFreshKey(null); setCopyError(false); }}>done</button>
               </div>
             </div>
           </div>
@@ -212,7 +292,36 @@ export default function DeveloperApiPage() {
                           <td className="col-key" style={{ fontFamily: 'var(--font-m)', fontSize: 11 }}>{k.prefix}…</td>
                           <td className="hide-sm" style={{ fontSize: 11, color: 'var(--t-dim)' }}>{k.lastUsedAt ? fmtTime(k.lastUsedAt) : 'never'}</td>
                           <td className="col-x" style={{ textAlign: 'right' }}>
-                            <button className="term-btn ghost revoke-btn" style={{ fontSize: 16, lineHeight: 1, padding: '2px 7px' }} title="revoke key" aria-label="revoke key" onClick={() => revoke(k.id)}>×</button>
+                            {confirmRevoke === k.id ? (
+                              /* inline two-step confirm */
+                              <span style={{ display: 'inline-flex', gap: 6, alignItems: 'center' }}>
+                                <span style={{ fontSize: 11, color: '#f87171' }}>revoke?</span>
+                                <button
+                                  className="term-btn ghost"
+                                  style={{ fontSize: 11, padding: '2px 7px', color: '#f87171', borderColor: '#f87171' }}
+                                  onClick={() => revoke(k.id)}
+                                >
+                                  yes
+                                </button>
+                                <button
+                                  className="term-btn ghost"
+                                  style={{ fontSize: 11, padding: '2px 7px' }}
+                                  onClick={cancelRevoke}
+                                >
+                                  no
+                                </button>
+                              </span>
+                            ) : (
+                              <button
+                                className="term-btn ghost revoke-btn"
+                                style={{ fontSize: 16, lineHeight: 1, padding: '2px 7px' }}
+                                title="revoke key"
+                                aria-label="revoke key"
+                                onClick={() => revoke(k.id)}
+                              >
+                                ×
+                              </button>
+                            )}
                           </td>
                         </tr>
                       ))}
@@ -225,23 +334,28 @@ export default function DeveloperApiPage() {
 
             <Panel label="top up api wallet">
               <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+                {/* VVV explainer for non-crypto developers */}
+                <div style={{ fontSize: 11.5, color: 'var(--t-muted)', lineHeight: 1.6, padding: '10px 12px', background: 'var(--t-bg-2)', borderRadius: 'var(--t-radius-sm)', border: '1px solid var(--t-border-2)' }}>
+                  <strong style={{ color: 'var(--t-text)' }}>What is VVV?</strong>
+                  {' '}VVV (Venice Token) is a real cryptocurrency that lives on the Base blockchain. Its price floats with the market. The <strong style={{ color: 'var(--t-text)' }}>+$X</strong> figure shown on each pack is internal API credit that lands in your account after payment - it is not a USD withdrawal or a guarantee of market value. When you click &ldquo;pay&rdquo;, your connected wallet sends VVV to the treasury address on Base. No exchange or bridge needed - just a funded Base wallet.
+                </div>
                 {packs.length === 0 ? (
                   <div style={{ fontSize: 12, color: 'var(--t-dim)' }}>top-up options unavailable, check back shortly</div>
                 ) : (
                   <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(120px, 1fr))', gap: 12 }}>
                     {packs.map((p) => (
-                      <div key={p.id} className="term-panel" style={{ padding: '14px 15px', display: 'flex', flexDirection: 'column', gap: 6 }}>
-                        <span style={{ fontFamily: 'var(--font-m)', fontSize: 22, color: 'var(--t-accent)' }}>+${p.credits.toFixed(0)}</span>
-                        <span style={{ fontSize: 11, color: 'var(--t-dim)' }}>added to wallet</span>
-                        <button
-                          className="term-btn primary"
-                          style={{ marginTop: 6, fontSize: 12 }}
-                          disabled={busy}
-                          onClick={() => buy(p)}
-                        >
-                          {busyPack === p.id && busy ? '···' : `pay ${p.vvv} VVV`}
-                        </button>
-                      </div>
+                        <div key={p.id} className="term-panel" style={{ padding: '14px 15px', display: 'flex', flexDirection: 'column', gap: 6 }}>
+                          <span style={{ fontFamily: 'var(--font-m)', fontSize: 22, color: 'var(--t-accent)' }}>+${p.credits.toFixed(0)}</span>
+                          <span style={{ fontSize: 11, color: 'var(--t-dim)' }}>added to wallet</span>
+                          <button
+                            className="term-btn primary"
+                            style={{ marginTop: 6, fontSize: 12 }}
+                            disabled={busy}
+                            onClick={() => buy(p)}
+                          >
+                            {busyPack === p.id && busy ? '···' : `pay ${p.vvv} VVV`}
+                          </button>
+                        </div>
                     ))}
                   </div>
                 )}
@@ -263,6 +377,11 @@ export default function DeveloperApiPage() {
                       <code style={{ fontFamily: 'var(--font-m)', fontSize: 12, color: 'var(--t-text)' }}>{e.path}</code>
                     </div>
                     <span style={{ fontSize: 11.5, color: 'var(--t-muted)', lineHeight: 1.4 }}>{e.desc}</span>
+                    {e.body && (
+                      <code style={{ fontFamily: 'var(--font-m)', fontSize: 10, color: 'var(--t-dim)', lineHeight: 1.4, wordBreak: 'break-all' }}>
+                        body: {e.body}
+                      </code>
+                    )}
                     <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginTop: 2 }}>
                       <span style={{ fontSize: 9, letterSpacing: '0.06em', textTransform: 'uppercase', color: 'var(--t-dim)', border: '1px solid var(--t-border-2)', borderRadius: 'var(--t-radius-sm)', padding: '2px 7px' }}>{e.billing}</span>
                       {e.model && <span style={{ fontSize: 9, letterSpacing: '0.06em', textTransform: 'uppercase', color: 'var(--t-accent)', border: '1px solid var(--t-accent-dim)', borderRadius: 'var(--t-radius-sm)', padding: '2px 7px' }}>pick model</span>}
@@ -274,8 +393,34 @@ export default function DeveloperApiPage() {
 
             <Panel label="quickstart">
               <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-                <span style={{ fontSize: 12, color: 'var(--t-muted)' }}>Call the API with any HTTP client. Pass your key as a Bearer token.</span>
-                <pre style={{ fontFamily: 'var(--font-m)', fontSize: 11.5, lineHeight: 1.6, background: 'var(--t-bg-2)', padding: '12px 14px', borderRadius: 'var(--t-radius-sm)', overflowX: 'auto', margin: 0, color: 'var(--t-text)' }}>{curl}</pre>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, flexWrap: 'wrap' }}>
+                  <span style={{ fontSize: 12, color: 'var(--t-muted)' }}>
+                    Call the API with any HTTP client. Pass your key as a Bearer token.
+                  </span>
+                  <button
+                    className="term-btn ghost"
+                    onClick={() => setShowDocs(true)}
+                    style={{ fontSize: 11, padding: '3px 10px', whiteSpace: 'nowrap' }}
+                    aria-label="Open full API reference"
+                  >
+                    view full API reference
+                  </button>
+                </div>
+                {/* chat example */}
+                <div style={{ position: 'relative' }}>
+                  <pre style={{ fontFamily: 'var(--font-m)', fontSize: 11.5, lineHeight: 1.6, background: 'var(--t-bg-2)', padding: '12px 14px', paddingRight: 72, borderRadius: 'var(--t-radius-sm)', overflowX: 'auto', margin: 0, color: 'var(--t-text)' }}>{curl}</pre>
+                  <button
+                    className="term-btn ghost"
+                    onClick={copyCurl}
+                    style={{ position: 'absolute', top: 8, right: 8, fontSize: 10, padding: '2px 8px', whiteSpace: 'nowrap' }}
+                    aria-label="copy curl example"
+                  >
+                    {curlCopied ? '✓ copied' : 'copy'}
+                  </button>
+                </div>
+                {/* github agent example */}
+                <span style={{ fontSize: 11, color: 'var(--t-dim)' }}>Agent endpoint example (POST /v1/github):</span>
+                <pre style={{ fontFamily: 'var(--font-m)', fontSize: 11.5, lineHeight: 1.6, background: 'var(--t-bg-2)', padding: '12px 14px', borderRadius: 'var(--t-radius-sm)', overflowX: 'auto', margin: 0, color: 'var(--t-text)' }}>{curlGithub}</pre>
                 <span style={{ fontSize: 11, color: 'var(--t-dim)', lineHeight: 1.5 }}>
                   Every endpoint shares one balance. Pick the LLM per call with the <code>model</code> field
                   (any id from /v1/models); omit it to use the default.
@@ -318,6 +463,8 @@ export default function DeveloperApiPage() {
         </Panel>
 
       </div>
+
+      {showDocs && <ApiReferenceModal onClose={() => setShowDocs(false)} />}
     </div>
   );
 }

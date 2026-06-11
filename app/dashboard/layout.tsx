@@ -5,6 +5,7 @@ import { usePathname, useRouter } from 'next/navigation';
 import { useAuthStore } from '@/lib/dash/stores/authStore';
 import { useChatStore } from '@/lib/dash/stores/chatStore';
 import { applySaved } from '@/lib/dash/customize';
+import { getMe } from '@/lib/dash/api';
 import Sidebar from '@/components/dash/Sidebar';
 import IconRail from '@/components/dash/IconRail';
 import Toasts from '@/components/dash/Toasts';
@@ -46,6 +47,23 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
   // Re-apply saved theme overrides + background once the shell is mounted.
   useEffect(() => { if (mounted && isAuthenticated) applySaved(); }, [mounted, isAuthenticated]);
+
+  // Refresh user profile from the server on mount. The persisted store only
+  // captures plan/credits at login time, so server-side changes (plan upgrade,
+  // credit top-up from another device) would otherwise never appear here.
+  useEffect(() => {
+    if (!mounted || !isAuthenticated) return;
+    getMe()
+      .then((me) => {
+        useAuthStore.getState().updateUser({
+          plan: me.plan,
+          credits: me.credits,
+          pro_expires_at: me.proExpiresAt ?? null,
+          avatarVariant: me.avatarVariant ?? null,
+        });
+      })
+      .catch(() => {});
+  }, [mounted, isAuthenticated]);
 
   // Detect mobile viewport; close drawer on route change.
   useEffect(() => {
@@ -101,7 +119,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     if (conv?.title) locPath += `/${slug(conv.title)}`;
   }
 
-  // On mobile, neither the icon rail nor the sidebar occupy grid space — the
+  // On mobile, neither the icon rail nor the sidebar occupy grid space - the
   // chat is full-width and both slide in together as the overlay drawer.
   const gridCols = isMobile
     ? '1fr'
