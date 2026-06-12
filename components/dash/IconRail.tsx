@@ -17,6 +17,7 @@ const NAV = [
   { href: '/dashboard/agents', label: 'agents', icon: 'M12 8V4H8|M4 12a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v6a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2z|M2 14h2|M20 14h2|M15 13v2|M9 13v2' },
   { href: '/dashboard/teams', label: 'teams', icon: 'M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2|M9 7a4 4 0 1 0 0 0|M23 21v-2a4 4 0 0 0-3-3.87|M16 3.13a4 4 0 0 1 0 7.75' },
   { href: '/dashboard/scheduler', label: 'scheduler', icon: 'M12 6v6l4 2|M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20' },
+  { href: '/dashboard/usage', label: 'usage & activity', icon: 'M18 20V10|M12 20V4|M6 20v-6' },
   { href: '/dashboard/costs', label: 'costs', icon: 'M12 1v22|M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6' },
   { href: '/dashboard/billing', label: 'billing', icon: 'M2 7a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2z|M2 10h20' },
   { href: '/dashboard/api', label: 'developer API', icon: 'M16 18l6-6-6-6|M8 6l-6 6 6 6' },
